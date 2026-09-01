@@ -78,7 +78,7 @@
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       });
       const grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, "rgba(94,224,196,.35)");
+      grad.addColorStop(0, "rgba(94,224,196,.45)");
       grad.addColorStop(1, "rgba(94,224,196,0)");
       ctx.strokeStyle = "#5ee0c4";
       ctx.lineWidth = 3;
