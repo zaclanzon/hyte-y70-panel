@@ -1,0 +1,153 @@
+:root {
+  --bg: #0a0d12;
+  --card: #131821;
+  --card-2: #1a2130;
+  --line: #232c3b;
+  --text: #e8edf5;
+  --muted: #8593a8;
+  --accent: #5ee0c4;
+  --accent-2: #7aa2ff;
+  --warn: #ffb454;
+  --bad: #ff6b6b;
+  --good: #6ee7a0;
+  --radius: 22px;
+  --pad: 20px;
+  --gap: 14px;
+  font-family: "Inter", "Cantarell", "Noto Sans", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); overflow-x: hidden; }
+body { font-size: 22px; line-height: 1.3; user-select: none; -webkit-user-select: none; touch-action: pan-y; }
+canvas { display: block; }
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding: var(--pad);
+  max-width: 100%;
+  min-height: 100%;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--pad);
+}
+
+/* Clock */
+.clock-card { text-align: center; padding-top: 18px; padding-bottom: 18px; }
+.clock { font-size: 112px; font-weight: 200; letter-spacing: -2px; line-height: 1; font-variant-numeric: tabular-nums; }
+.clock-sub { color: var(--muted); margin-top: 10px; font-size: 22px; }
+.dot-sep { margin: 0 10px; opacity: .5; }
+
+/* Weather */
+.weather-now { display: flex; align-items: center; gap: 22px; }
+.weather-icon { width: 104px; height: 104px; flex: none; color: var(--accent); }
+.weather-icon svg { width: 100%; height: 100%; }
+.weather-temp { font-size: 68px; font-weight: 300; line-height: 1; }
+.weather-temp .unit { font-size: 40px; color: var(--muted); margin-left: 4px; }
+.weather-desc { font-size: 26px; margin-top: 4px; }
+.weather-meta { color: var(--muted); font-size: 20px; margin-top: 6px; }
+.weather-days { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+.weather-day { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--muted); font-size: 18px; flex: 1; }
+.weather-day svg { width: 40px; height: 40px; color: var(--text); }
+.weather-day b { color: var(--text); font-weight: 500; }
+.weather-card.offline { opacity: .55; }
+
+/* Stats */
+.stats-grid { display: grid; grid-template-columns: 1fr; gap: var(--gap); }
+.stat-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+.stat-title { font-size: 20px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); font-weight: 600; }
+.stat-sub { color: var(--muted); font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat-body { display: flex; align-items: center; gap: 26px; }
+.ring { width: 170px; height: 170px; flex: none; position: relative; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-width: 14; stroke-linecap: round; }
+.ring .track { stroke: var(--card-2); }
+.ring .value { stroke: var(--accent); transition: stroke-dashoffset .4s ease, stroke .4s; }
+.ring .label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ring .label b { font-size: 46px; font-weight: 400; line-height: 1; }
+.ring .label small { color: var(--muted); font-size: 16px; margin-top: 4px; }
+.stat-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; flex: 1; }
+.fact { display: flex; flex-direction: column; }
+.fact-label { color: var(--muted); font-size: 16px; text-transform: uppercase; letter-spacing: 1px; }
+.fact-value { font-size: 30px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.spark { width: 100%; height: 50px; margin-top: 12px; border-radius: 10px; background: rgba(255,255,255,.02); }
+.cores { display: grid; grid-template-columns: repeat(16, 1fr); gap: 4px; margin-top: 14px; }
+.core { height: 10px; border-radius: 3px; background: var(--card-2); overflow: hidden; }
+.core i { display: block; height: 100%; background: var(--accent-2); transition: width .4s; }
+
+.bar-row { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
+.bar-label { color: var(--muted); width: 90px; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar { flex: 1; height: 16px; background: var(--card-2); border-radius: 8px; overflow: hidden; }
+.bar-fill { height: 100%; width: 0; background: var(--accent-2); border-radius: 8px; transition: width .4s, background .4s; }
+.bar-value { width: 200px; text-align: right; font-variant-numeric: tabular-nums; font-size: 18px; white-space: nowrap; }
+
+.net-body { display: flex; gap: 20px; }
+.net-dir { flex: 1; display: flex; align-items: center; gap: 12px; background: var(--card-2); border-radius: 14px; padding: 14px 18px; }
+.net-arrow { font-size: 22px; }
+.net-arrow.down { color: var(--accent); }
+.net-arrow.up { color: var(--accent-2); }
+.net-value { font-size: 28px; font-variant-numeric: tabular-nums; }
+.fans { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.fan { background: var(--card-2); border-radius: 12px; padding: 8px 14px; color: var(--muted); font-size: 18px; }
+.fan b { color: var(--text); font-weight: 500; }
+
+/* Agents */
+.agent-summary { color: var(--muted); font-size: 18px; }
+.agent-list { display: flex; flex-direction: column; gap: 12px; }
+.agent-empty { color: var(--muted); font-size: 19px; padding: 6px 0; }
+.agent { display: grid; grid-template-columns: 16px 1fr auto; gap: 16px; align-items: center; background: var(--card-2); border-radius: 16px; padding: 14px 18px; }
+.agent .light { width: 16px; height: 16px; border-radius: 50%; background: var(--muted); }
+.agent.working .light { background: var(--accent); box-shadow: 0 0 12px var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+.agent.attention .light { background: var(--warn); box-shadow: 0 0 12px var(--warn); animation: pulse .6s ease-in-out infinite; }
+.agent.waiting .light { background: var(--accent-2); }
+.agent.idle .light { background: var(--muted); }
+.agent.ended .light { background: var(--line); }
+.agent.attention { border: 1px solid var(--warn); }
+.agent-name { font-size: 24px; font-weight: 500; }
+.agent-name small { color: var(--muted); font-weight: 400; margin-left: 10px; font-size: 18px; }
+.agent-detail { color: var(--muted); font-size: 18px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 440px; }
+.agent-side { text-align: right; color: var(--muted); font-size: 17px; font-variant-numeric: tabular-nums; }
+.agent-side b { display: block; color: var(--text); font-size: 18px; font-weight: 500; text-transform: capitalize; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+/* Apps */
+.apps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.app-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  min-height: 128px; border-radius: 18px; border: 1px solid var(--line); background: var(--card-2);
+  color: var(--text); font: inherit; font-size: 20px; cursor: pointer; touch-action: manipulation;
+  transition: transform .08s, background .15s;
+}
+.app-btn svg { width: 52px; height: 52px; color: var(--accent-2); }
+.app-btn:active, .app-btn.pressed { transform: scale(.94); background: #26304a; }
+.app-btn.error { border-color: var(--bad); }
+
+.foot { display: flex; justify-content: space-between; color: var(--muted); font-size: 16px; padding: 0 8px; }
+.conn::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--warn); margin-right: 8px; }
+.conn.online::before { background: var(--good); }
+.conn.offline::before { background: var(--bad); }
+
+.dim { position: fixed; inset: 0; background: #000; opacity: .96; z-index: 100; }
+
+/* Landscape: two columns when the screen is not rotated */
+@media (orientation: landscape) {
+  .panel { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: min-content; align-items: start; }
+  .clock-card { grid-column: 1 / -1; }
+  .clock { font-size: 96px; }
+  .stats-grid { grid-column: 1 / -1; grid-template-columns: repeat(4, 1fr); }
+  .agents-card { grid-column: 1 / 3; }
+  .foot { grid-column: 1 / -1; }
+  .ring { width: 150px; height: 150px; }
+}
+@media (max-width: 500px) {
+  body { font-size: 18px; }
+  .clock { font-size: 88px; }
+  .apps-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.weather-card.offline .weather-icon, .weather-card.offline .weather-temp, .weather-card.offline .weather-days { display: none; }

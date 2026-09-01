@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>HYTE Panel</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main id="panel" class="panel">
+    <header class="card clock-card">
+      <div class="clock" id="clock">--:--</div>
+      <div class="clock-sub">
+        <span id="date">Loading</span>
+        <span class="dot-sep">•</span>
+        <span id="hostname"></span>
+        <span class="dot-sep">•</span>
+        <span id="uptime">up –</span>
+      </div>
+    </header>
+
+    <section class="card weather-card" id="weather-card">
+      <div class="weather-now">
+        <div class="weather-icon" id="weather-icon"></div>
+        <div class="weather-main">
+          <div class="weather-temp"><span id="weather-temp">--</span><span class="unit" id="weather-unit">°</span></div>
+          <div class="weather-desc" id="weather-desc">Waiting for weather</div>
+          <div class="weather-meta" id="weather-meta"></div>
+        </div>
+      </div>
+      <div class="weather-days" id="weather-days"></div>
+    </section>
+
+    <section class="stats-grid">
+      <div class="card stat-card" id="cpu-card">
+        <div class="stat-head"><span class="stat-title">CPU</span><span class="stat-sub" id="cpu-model"></span></div>
+        <div class="stat-body">
+          <div class="ring" id="cpu-ring"></div>
+          <div class="stat-facts">
+            <div class="fact"><span class="fact-label">Temp</span><span class="fact-value" id="cpu-temp">--</span></div>
+            <div class="fact"><span class="fact-label">Clock</span><span class="fact-value" id="cpu-freq">--</span></div>
+            <div class="fact"><span class="fact-label">Load</span><span class="fact-value" id="cpu-load">--</span></div>
+          </div>
+        </div>
+        <canvas class="spark" id="cpu-spark" width="640" height="80"></canvas>
+        <div class="cores" id="cpu-cores"></div>
+      </div>
+
+      <div class="card stat-card" id="gpu-card">
+        <div class="stat-head"><span class="stat-title">GPU</span><span class="stat-sub" id="gpu-model">No GPU</span></div>
+        <div class="stat-body">
+          <div class="ring" id="gpu-ring"></div>
+          <div class="stat-facts">
+            <div class="fact"><span class="fact-label">Temp</span><span class="fact-value" id="gpu-temp">--</span></div>
+            <div class="fact"><span class="fact-label">Power</span><span class="fact-value" id="gpu-power">--</span></div>
+            <div class="fact"><span class="fact-label">Clock</span><span class="fact-value" id="gpu-clock">--</span></div>
+            <div class="fact"><span class="fact-label">Fan</span><span class="fact-value" id="gpu-fan">--</span></div>
+          </div>
+        </div>
+        <canvas class="spark" id="gpu-spark" width="640" height="80"></canvas>
+        <div class="bar-row"><span class="bar-label">VRAM</span><div class="bar"><div class="bar-fill" id="gpu-vram-bar"></div></div><span class="bar-value" id="gpu-vram">--</span></div>
+      </div>
+
+      <div class="card stat-card" id="mem-card">
+        <div class="stat-head"><span class="stat-title">Memory</span><span class="stat-sub" id="mem-total"></span></div>
+        <div class="bar-row"><span class="bar-label">RAM</span><div class="bar"><div class="bar-fill" id="mem-bar"></div></div><span class="bar-value" id="mem-value">--</span></div>
+        <div id="disk-rows"></div>
+      </div>
+
+      <div class="card stat-card" id="net-card">
+        <div class="stat-head"><span class="stat-title">Network</span><span class="stat-sub" id="net-iface"></span></div>
+        <div class="net-body">
+          <div class="net-dir"><span class="net-arrow down">▼</span><span class="net-value" id="net-down">0 B/s</span></div>
+          <div class="net-dir"><span class="net-arrow up">▲</span><span class="net-value" id="net-up">0 B/s</span></div>
+        </div>
+        <div class="fans" id="fans"></div>
+      </div>
+    </section>
+
+    <section class="card agents-card" id="agents-card">
+      <div class="stat-head">
+        <span class="stat-title">AI agents</span>
+        <span class="agent-summary" id="agent-summary">None running</span>
+      </div>
+      <div class="agent-list" id="agent-list">
+        <div class="agent-empty">No agents detected. Start Claude Code, Codex or another agent, or send hook events to this panel.</div>
+      </div>
+    </section>
+
+    <section class="card apps-card">
+      <div class="stat-head"><span class="stat-title">Apps</span><span class="stat-sub" id="launch-status"></span></div>
+      <div class="apps-grid" id="apps-grid"></div>
+    </section>
+
+    <footer class="foot">
+      <span id="conn" class="conn">connecting</span>
+      <span id="version"></span>
+    </footer>
+  </main>
+
+  <div id="dim" class="dim" hidden></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
