@@ -1,7 +1,15 @@
-/* HYTE Panel — glassmorphism theme */
+/* HYTE Panel — glassmorphism theme.
+   --accent / --accent-2 follow the rgb-runway Base and Stripe colors (set live from
+   app.js); --accent-3 is their blend and replaces every warning-yellow. Usage
+   gauges and bars use hard bands: stripe, then yellow (--usage-mid), then base
+   (thresholds in heat() in app.js). The values here are only the defaults shown before the first
+   snapshot arrives. */
+@property --accent { syntax: "<color>"; inherits: true; initial-value: #ff2d3f; }
+@property --accent-2 { syntax: "<color>"; inherits: true; initial-value: #3d7bff; }
+@property --accent-3 { syntax: "<color>"; inherits: true; initial-value: #b23cff; }
 :root {
-  --bg-0: #070a12;
-  --bg-1: #0d1224;
+  --bg-0: #07060f;
+  --bg-1: #120a22;
   --glass: rgba(255, 255, 255, 0.055);
   --glass-2: rgba(255, 255, 255, 0.09);
   --glass-strong: rgba(255, 255, 255, 0.14);
@@ -9,11 +17,12 @@
   --edge-hi: rgba(255, 255, 255, 0.28);
   --text: #f2f5fb;
   --muted: rgba(226, 232, 245, 0.62);
-  --accent: #5ee0c4;
-  --accent-2: #7aa2ff;
-  --accent-3: #c084fc;
-  --warn: #ffb454;
-  --bad: #ff6b8a;
+  --accent: #ff2d3f;      /* runway base color */
+  --accent-2: #3d7bff;    /* runway stripe color */
+  --accent-3: #b23cff;    /* base + stripe blend */
+  --warn: var(--accent-3);
+  --usage-mid: #ffd23f;   /* fixed yellow at the middle of the usage ramp (also USAGE_MID in app.js) */
+  --bad: #ff2d3f;
   --good: #6ee7a0;
   --radius: 28px;
   --radius-sm: 18px;
@@ -23,13 +32,14 @@
   --shadow: 0 18px 44px rgba(0, 0, 0, 0.42), 0 1px 0 rgba(255, 255, 255, 0.05);
   font-family: "Inter", "Cantarell", "Noto Sans", "Segoe UI", system-ui, sans-serif;
   color-scheme: dark;
+  transition: --accent 1.2s ease, --accent-2 1.2s ease, --accent-3 1.2s ease;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; min-height: 100%; color: var(--text); overflow-x: hidden; }
 body {
   font-size: 22px; line-height: 1.3; user-select: none; -webkit-user-select: none; touch-action: pan-y;
-  background: radial-gradient(120% 60% at 50% -10%, #17223f 0%, var(--bg-1) 45%, var(--bg-0) 100%) fixed;
+  background: radial-gradient(120% 60% at 50% -10%, color-mix(in srgb, var(--accent-3) 16%, var(--bg-1)) 0%, var(--bg-1) 45%, var(--bg-0) 100%) fixed;
 }
 canvas { display: block; }
 
@@ -40,17 +50,17 @@ body::before, body::after, .panel::before {
 }
 body::before {
   width: 640px; height: 640px; left: -220px; top: 120px;
-  background: radial-gradient(circle, rgba(94, 224, 196, .55), rgba(94, 224, 196, 0) 70%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 55%, transparent), transparent 70%);
   animation: drift-a 38s ease-in-out infinite alternate;
 }
 body::after {
   width: 720px; height: 720px; right: -300px; top: 42%;
-  background: radial-gradient(circle, rgba(122, 162, 255, .55), rgba(122, 162, 255, 0) 70%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent-2) 55%, transparent), transparent 70%);
   animation: drift-b 46s ease-in-out infinite alternate;
 }
 .panel::before {
   width: 560px; height: 560px; left: 10%; bottom: -200px;
-  background: radial-gradient(circle, rgba(192, 132, 252, .45), rgba(192, 132, 252, 0) 70%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent-3) 45%, transparent), transparent 70%);
   animation: drift-c 52s ease-in-out infinite alternate;
 }
 @keyframes drift-a { to { transform: translate(140px, 260px) scale(1.15); } }
@@ -95,16 +105,16 @@ body::after {
 .clock-card { text-align: center; padding-top: 16px; padding-bottom: 16px; }
 .clock {
   font-size: 112px; font-weight: 200; letter-spacing: -2px; line-height: 1; font-variant-numeric: tabular-nums;
-  background: linear-gradient(180deg, #ffffff 0%, #c9d6ff 100%);
+  background: linear-gradient(180deg, #ffffff 0%, color-mix(in srgb, var(--accent-2) 30%, #ffffff) 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 0 22px rgba(122, 162, 255, 0.35));
+  filter: drop-shadow(0 0 22px color-mix(in srgb, var(--accent-2) 35%, transparent));
 }
 .clock-sub { color: var(--muted); margin-top: 10px; font-size: 22px; }
 .dot-sep { margin: 0 10px; opacity: .5; }
 
 /* Weather */
 .weather-now { display: flex; align-items: center; gap: 22px; }
-.weather-icon { width: 104px; height: 104px; flex: none; color: var(--accent); filter: drop-shadow(0 0 18px rgba(94, 224, 196, 0.55)); }
+.weather-icon { width: 104px; height: 104px; flex: none; color: var(--accent); filter: drop-shadow(0 0 18px color-mix(in srgb, var(--accent) 55%, transparent)); }
 .weather-icon svg { width: 100%; height: 100%; }
 .weather-temp { font-size: 68px; font-weight: 300; line-height: 1; }
 .weather-temp .unit { font-size: 36px; color: var(--muted); margin-left: 4px; }
@@ -124,7 +134,7 @@ body::after {
 .stat-sub { color: var(--muted); font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stat-body { display: flex; align-items: center; gap: 26px; }
 .ring { width: 170px; height: 170px; flex: none; position: relative; }
-.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; filter: drop-shadow(0 0 10px rgba(94, 224, 196, 0.35)); }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent-2) 35%, transparent)); }
 .ring circle { fill: none; stroke-width: 12; stroke-linecap: round; }
 .ring .track { stroke: rgba(255, 255, 255, 0.08); }
 .ring .value { stroke: var(--accent); transition: stroke-dashoffset .5s ease, stroke .5s; }
@@ -138,7 +148,7 @@ body::after {
 .spark { width: 100%; height: 50px; margin-top: 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.035); border: 1px solid rgba(255, 255, 255, 0.06); }
 .cores { display: grid; grid-template-columns: repeat(16, 1fr); gap: 4px; margin-top: 14px; }
 .core { height: 9px; border-radius: 4px; overflow: hidden; }
-.core i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent-2), var(--accent-3)); transition: width .4s; }
+.core i { display: block; height: 100%; background: var(--usage-ramp, linear-gradient(90deg, var(--accent-2) 50%, var(--usage-mid) 50% 75%, var(--accent) 75%)); transition: width .4s; }
 
 .bar-row { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
 .bar-label { color: var(--muted); width: 90px; font-size: 17px; text-transform: uppercase; letter-spacing: 1.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -167,8 +177,8 @@ body::after {
 .agent.waiting .light { background: var(--accent-2); box-shadow: 0 0 10px var(--accent-2); }
 .agent.idle .light { background: var(--muted); }
 .agent.ended .light { background: rgba(255, 255, 255, 0.2); }
-.agent.attention { border-color: rgba(255, 180, 84, 0.55); background: rgba(255, 180, 84, 0.08); box-shadow: 0 0 24px rgba(255, 180, 84, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
-.agent.working { border-color: rgba(94, 224, 196, 0.3); }
+.agent.attention { border-color: color-mix(in srgb, var(--warn) 55%, transparent); background: color-mix(in srgb, var(--warn) 8%, transparent); box-shadow: 0 0 24px color-mix(in srgb, var(--warn) 15%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+.agent.working { border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
 .agent-name { font-size: 24px; font-weight: 500; }
 .agent-name small { color: var(--muted); font-weight: 400; margin-left: 10px; font-size: 18px; }
 .agent-detail { color: var(--muted); font-size: 18px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 440px; }
@@ -190,9 +200,9 @@ body::after {
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.12), transparent 55%);
   pointer-events: none;
 }
-.app-btn svg { width: 50px; height: 50px; color: var(--accent-2); filter: drop-shadow(0 0 10px rgba(122, 162, 255, 0.45)); }
-.app-btn:active, .app-btn.pressed { transform: scale(.94); background: var(--glass-strong); border-color: var(--edge-hi); box-shadow: 0 0 28px rgba(122, 162, 255, 0.25); }
-.app-btn.error { border-color: var(--bad); box-shadow: 0 0 20px rgba(255, 107, 138, 0.25); }
+.app-btn svg { width: 50px; height: 50px; color: var(--accent-2); filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent-2) 45%, transparent)); }
+.app-btn:active, .app-btn.pressed { transform: scale(.94); background: var(--glass-strong); border-color: var(--edge-hi); box-shadow: 0 0 28px color-mix(in srgb, var(--accent-2) 25%, transparent); }
+.app-btn.error { border-color: var(--bad); box-shadow: 0 0 20px color-mix(in srgb, var(--bad) 25%, transparent); }
 
 .foot { display: flex; justify-content: space-between; color: var(--muted); font-size: 16px; padding: 0 8px; }
 .conn::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--warn); margin-right: 8px; box-shadow: 0 0 8px currentColor; }

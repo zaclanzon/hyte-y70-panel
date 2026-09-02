@@ -19,6 +19,8 @@ serves the page. A kiosk window shows the page full screen on the HYTE screen.
 - **AI agents** monitor. Shows Claude Code, Codex, Aider and other agent CLIs with
   a live status: working, waiting, needs attention, idle, ended.
 - **App buttons**. Large touch targets that start programs from the config.
+- **Lighting-matched theme**. Accent colors track the rgb-runway Base and Stripe
+  colors and switch live when they change.
 
 ## Requirements
 
@@ -184,6 +186,7 @@ The config file is `~/.config/hyte-panel/config.toml`. Start from
 | `weather` | `latitude`, `longitude`, `units` | Location and unit system. |
 | `hardware` | `disks`, `network_interface` | Mount points to show. Interface to graph. |
 | `agents` | `process_patterns` | Executable names that count as agents. |
+| `theme` | `follow_runway`, `runway_config` | Accent colors follow the rgb-runway `base_color` and `stripe_color`; warnings use their blend. |
 | `[[apps]]` | `desktop_id` or `command` | One block per button. |
 
 Only apps from the config can start. The page cannot run arbitrary commands.
@@ -226,6 +229,7 @@ curl -X POST http://127.0.0.1:8787/api/agents/status \
 | GET | `/api/snapshot` | One reading of all hardware, weather and agents. |
 | GET | `/api/weather?refresh=1` | Weather; `refresh=1` forces a fetch. |
 | GET | `/api/agents` | Agent list. |
+| GET | `/api/theme` | Accent colors derived from the rgb-runway config. |
 | POST | `/api/agents/hook` | Claude Code hook payload (JSON on stdin). |
 | POST | `/api/agents/status` | Generic status: `{id, name, status, detail, cwd}`. |
 | DELETE | `/api/agents/{id}` | Remove a hook-reported agent. |

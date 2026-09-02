@@ -18,6 +18,7 @@ from . import __version__
 from .collectors.agents import AgentRegistry
 from .collectors.gpu import GpuCollector
 from .collectors.system import SystemCollector
+from .collectors.theme import ThemeCollector
 from .collectors.weather import WeatherCollector
 from .config import Config, load_config
 from .launcher import launch
@@ -37,6 +38,7 @@ class PanelState:
         self.agents = AgentRegistry(
             cfg.agents.process_patterns, cfg.agents.scan_processes, cfg.agents.stale_seconds
         )
+        self.theme = ThemeCollector(cfg.theme)
         self.snapshot: dict[str, Any] = {}
         self.clients: set[WebSocket] = set()
         self._task: asyncio.Task | None = None
@@ -63,6 +65,7 @@ class PanelState:
         snap["gpus"] = self.gpu.snapshot()
         snap["agents"] = self.agents.snapshot() if self.cfg.agents.enabled else []
         snap["weather"] = self.weather.data
+        snap["theme"] = self.theme.snapshot()
         snap["time"] = time.time()
         self.snapshot = snap
         return snap
@@ -118,6 +121,13 @@ def create_app(cfg: Config | None = None, *, background: bool = True) -> FastAPI
     app = FastAPI(title="hyte-panel", version=__version__, lifespan=lifespan)
     app.state.panel = state
 
+    @app.middleware("http")
+    async def no_cache(request: Request, call_next):
+        # The kiosk view must always revalidate the page and static files.
+        response = await call_next(request)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
     @app.get("/")
     async def index() -> FileResponse:
         return FileResponse(STATIC_DIR / "index.html")
@@ -135,6 +145,10 @@ def create_app(cfg: Config | None = None, *, background: bool = True) -> FastAPI
         if refresh:
             await state.weather.refresh(state._http)
         return state.weather.data
+
+    @app.get("/api/theme")
+    async def api_theme() -> dict[str, Any]:
+        return state.theme.snapshot()
 
     @app.post("/api/launch/{index}")
     async def api_launch(index: int) -> dict[str, Any]:

@@ -48,8 +48,14 @@
     return d > 0 ? `up ${d}d ${h}h` : h > 0 ? `up ${h}h ${m}m` : `up ${m}m`;
   };
   const fmtAge = (s) => (s < 60 ? `${Math.round(s)}s` : s < 3600 ? `${Math.floor(s / 60)}m` : `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`);
-  const heat = (pct) => (pct >= 90 ? "var(--bad)" : pct >= 70 ? "var(--warn)" : "var(--accent)");
-
+  // Usage color, traffic-light style with hard bands: stripe color, then a fixed
+  // yellow, then base color. No blending between them.
+  const USAGE_MID = "#ffd23f";
+  const USAGE_YELLOW_AT = 50, USAGE_BASE_AT = 75; // percent thresholds
+  const heat = (pct) => {
+    const p = Math.max(0, Math.min(100, pct ?? 0));
+    return p >= USAGE_BASE_AT ? theme.primary : p >= USAGE_YELLOW_AT ? USAGE_MID : theme.secondary;
+  };
   // ---- Ring gauge ------------------------------------------------------------------
   function makeRing(el, sub) {
     const r = 40, c = 2 * Math.PI * r;
@@ -59,10 +65,28 @@
       const p = Math.max(0, Math.min(100, pct ?? 0));
       val.style.strokeDashoffset = c * (1 - p / 100);
       val.style.stroke = heat(p);
+      val.dataset.heat = p;
       label.textContent = pct == null ? "--" : `${Math.round(p)}%`;
     };
   }
 
+  // ---- Theme: colors follow the rgb-runway lighting (see collectors/theme.py) -------
+  const theme = { primary: "#ff2d3f", secondary: "#3d7bff", blend: "#b23cff" };
+  const hexToRgb = (hex) => hex.slice(1).match(/../g).map((h) => parseInt(h, 16)).join(",");
+  function applyTheme(t) {
+    if (!t || !t.primary) return;
+    if (t.primary === theme.primary && t.secondary === theme.secondary && t.blend === theme.blend) return;
+    Object.assign(theme, { primary: t.primary, secondary: t.secondary, blend: t.blend });
+    const root = document.documentElement.style;
+    root.setProperty("--accent", theme.primary);
+    root.setProperty("--accent-2", theme.secondary);
+    root.setProperty("--accent-3", theme.blend);
+    root.setProperty("--usage-ramp", `linear-gradient(90deg, ${theme.secondary} ${USAGE_YELLOW_AT}%, ${USAGE_MID} ${USAGE_YELLOW_AT}% ${USAGE_BASE_AT}%, ${theme.primary} ${USAGE_BASE_AT}%)`);
+    document.querySelectorAll("[data-heat]").forEach((el) => {
+      const c = heat(+el.dataset.heat);
+      if (el.tagName === "circle") el.style.stroke = c; else el.style.background = c;
+    });
+  }
   // ---- Sparkline -------------------------------------------------------------------
   function makeSpark(canvas, max = 100, points = 90) {
     const ctx = canvas.getContext("2d");
@@ -78,9 +102,10 @@
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       });
       const grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, "rgba(94,224,196,.45)");
-      grad.addColorStop(1, "rgba(94,224,196,0)");
-      ctx.strokeStyle = "#5ee0c4";
+      const rgb = hexToRgb(theme.secondary);
+      grad.addColorStop(0, `rgba(${rgb},.45)`);
+      grad.addColorStop(1, `rgba(${rgb},0)`);
+      ctx.strokeStyle = theme.secondary;
       ctx.lineWidth = 3;
       ctx.lineJoin = "round";
       ctx.stroke();
@@ -164,6 +189,7 @@
   }
 
   function renderSnapshot(s) {
+    applyTheme(s.theme);
     $("hostname").textContent = s.hostname || "";
     $("uptime").textContent = fmtUptime(s.uptime_seconds);
 
@@ -193,6 +219,7 @@
       const vram = gpu.mem_percent ?? 0;
       $("gpu-vram-bar").style.width = `${vram}%`;
       $("gpu-vram-bar").style.background = heat(vram);
+      $("gpu-vram-bar").dataset.heat = vram;
       $("gpu-vram").textContent = gpu.mem_used_mb == null ? "--" : `${(gpu.mem_used_mb / 1024).toFixed(1)} / ${(gpu.mem_total_mb / 1024).toFixed(0)} GB`;
     } else {
       $("gpu-model").textContent = "No NVIDIA GPU found";
@@ -203,9 +230,10 @@
     $("mem-total").textContent = fmtGB(mem.total);
     $("mem-bar").style.width = `${mem.percent}%`;
     $("mem-bar").style.background = heat(mem.percent);
+    $("mem-bar").dataset.heat = mem.percent;
     $("mem-value").textContent = `${fmtGB(mem.used)} (${Math.round(mem.percent)}%)`;
     $("disk-rows").innerHTML = (s.disks || []).map((d) =>
-      `<div class="bar-row"><span class="bar-label">${d.mount}</span><div class="bar"><div class="bar-fill" style="width:${d.percent}%;background:${heat(d.percent)}"></div></div><span class="bar-value">${fmtGB(d.used)} / ${fmtGB(d.total)}</span></div>`
+      `<div class="bar-row"><span class="bar-label">${d.mount}</span><div class="bar"><div class="bar-fill" data-heat="${d.percent}" style="width:${d.percent}%;background:${heat(d.percent)}"></div></div><span class="bar-value">${fmtGB(d.used)} / ${fmtGB(d.total)}</span></div>`
     ).join("");
 
     $("net-iface").textContent = s.network.interface;

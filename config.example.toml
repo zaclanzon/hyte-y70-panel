@@ -36,6 +36,15 @@ scan_processes = true
 process_patterns = ["claude", "codex", "aider", "gemini", "cursor-agent", "copilot", "goose"]
 stale_seconds = 900     # Hide hook-reported agents with no events for this long
 
+[theme]
+# Accent colors follow the rgb-runway lighting config (base_color -> primary,
+# stripe_color -> secondary). Warnings use a blend of the two. The panel
+# re-reads the file whenever it changes, so the screen switches with the LEDs.
+follow_runway = true
+runway_config = ""      # Empty = ~/.config/rgb-runway.json
+primary = [255, 0, 0]   # Fallbacks when the file is missing or follow_runway = false
+secondary = [0, 0, 255]
+
 # App buttons. Use "desktop_id" for installed apps (gtk-launch), or "command".
 [[apps]]
 name = "Terminal"

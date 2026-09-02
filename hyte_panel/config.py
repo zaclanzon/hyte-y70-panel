@@ -59,6 +59,15 @@ class AgentsConfig:
 
 
 @dataclass
+class ThemeConfig:
+    follow_runway: bool = True
+    runway_config: str = ""  # Empty = ~/.config/rgb-runway.json
+    # Used when the rgb-runway config is missing or follow_runway is false.
+    primary: list[int] = field(default_factory=lambda: [255, 0, 0])
+    secondary: list[int] = field(default_factory=lambda: [0, 0, 255])
+
+
+@dataclass
 class AppButton:
     name: str
     icon: str = "app"
@@ -76,6 +85,7 @@ class Config:
     weather: WeatherConfig = field(default_factory=WeatherConfig)
     hardware: HardwareConfig = field(default_factory=HardwareConfig)
     agents: AgentsConfig = field(default_factory=AgentsConfig)
+    theme: ThemeConfig = field(default_factory=ThemeConfig)
     apps: list[AppButton] = field(default_factory=list)
     source: str = "defaults"
 
@@ -103,6 +113,7 @@ def parse_config(raw: dict[str, Any], source: str = "dict") -> Config:
         weather=_fill(WeatherConfig, raw.get("weather")),
         hardware=_fill(HardwareConfig, raw.get("hardware")),
         agents=_fill(AgentsConfig, raw.get("agents")),
+        theme=_fill(ThemeConfig, raw.get("theme")),
         apps=apps,
         source=source,
     )

@@ -68,7 +68,12 @@ def run_gtk(cfg: Config, url: str) -> int:
             win = Gtk.ApplicationWindow(application=self, title="HYTE Panel")
             win.set_decorated(False)
             win.set_default_size(cfg.display.width, cfg.display.height)
-            view = WebKit.WebView()
+            # Ephemeral session: no disk cache, so edits to the static files
+            # show up on the next restart instead of hours later.
+            try:
+                view = WebKit.WebView(network_session=WebKit.NetworkSession.new_ephemeral())
+            except (AttributeError, TypeError):
+                view = WebKit.WebView()
             settings = view.get_settings()
             settings.set_enable_developer_extras(False)
             settings.set_enable_smooth_scrolling(True)

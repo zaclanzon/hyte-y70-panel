@@ -25,16 +25,21 @@ def test_config_endpoint_hides_commands(client):
 
 def test_snapshot_has_all_sections(client):
     snap = client.get("/api/snapshot").json()
-    for key in ("cpu", "memory", "disks", "network", "gpus", "agents", "weather", "uptime_seconds"):
+    for key in ("cpu", "memory", "disks", "network", "gpus", "agents", "weather", "theme", "uptime_seconds"):
         assert key in snap
     assert snap["cpu"]["cores"] >= 1
     assert snap["gpus"] == []
     assert snap["weather"]["ok"] is False
+    assert snap["theme"]["primary"].startswith("#")
+    assert client.get("/api/theme").json() == snap["theme"]
 
 
 def test_index_and_static(client):
     assert "HYTE Panel" in client.get("/").text
-    assert client.get("/static/app.js").status_code == 200
+    r = client.get("/static/app.js")
+    assert r.status_code == 200
+    assert r.headers["cache-control"] == "no-cache"
+    assert client.get("/").headers["cache-control"] == "no-cache"
 
 
 def test_launch(client, monkeypatch):
