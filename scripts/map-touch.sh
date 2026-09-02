@@ -26,8 +26,10 @@ find_touch_device() {
       B:*)
         # ABS_MT_POSITION_X (0x35) present and the device is not a mouse -> touchscreen.
         if [[ "$line" == B:\ ABS=* ]]; then
-          local abs; abs=$(sed 's/^B: ABS=//' <<<"$line")
-          if [[ "$abs" == *"260800000000000"* || "$abs" == *"2608000 0"* || "$abs" == *"6600000000000"* || "$abs" == *"2f3800000000000"* ]]; then
+          # The ABS bitmask is one or more 64-bit hex words, most significant first.
+          # ABS_MT_POSITION_X is bit 0x35 (53), so it lives in the last word.
+          local abs word; abs=$(sed 's/^B: ABS=//' <<<"$line"); word=${abs##* }
+          if (( 16#$word & (1 << 53) )); then
             echo "$vid:$pid|$name"; return 0
           fi
         fi ;;
@@ -69,10 +71,11 @@ if [[ "$DESKTOP" == *GNOME* ]] && command -v gsettings >/dev/null 2>&1; then
     exit 1
   fi
   # Pick the monitor block whose connector matches OUTPUT, else the one with a portrait 'transform'.
-  read -r VENDOR PRODUCT SERIAL < <(python3 - "$MON_XML" "$OUTPUT" <<'PY'
+  # Tab-separated: product names contain spaces, for example "HYTE Y70ti".
+  IFS=$'\t' read -r VENDOR PRODUCT SERIAL < <(python3 - "$MON_XML" "$OUTPUT" <<'PY'
 import sys, xml.etree.ElementTree as ET
 tree = ET.parse(sys.argv[1]); want = sys.argv[2]
-best = None
+candidates = []
 for cfg in tree.iter("configuration"):
     for lm in cfg.iter("logicalmonitor"):
         transform = (lm.findtext("transform/rotation") or "normal").strip()
@@ -81,13 +84,18 @@ for cfg in tree.iter("configuration"):
             conn = spec.findtext("connector") or ""
             row = (spec.findtext("vendor") or "", spec.findtext("product") or "", spec.findtext("serial") or "", conn)
             if want and conn == want:
-                best = row; break
-            if not want and transform in ("left", "right") and best is None:
-                best = row
-    if best: break
+                candidates.append(row)
+            elif not want and transform in ("left", "right"):
+                candidates.append(row)
+# Prefer the block that is the HYTE panel (vendor RTK / product "HYTE ..."),
+# since monitors.xml keeps every monitor that ever used this connector.
+def score(row):
+    vendor, product = row[0].upper(), row[1].upper()
+    return (0 if "HYTE" in product else 1, 0 if vendor == "RTK" else 1)
+best = min(candidates, key=score) if candidates else None
 if not best:
     sys.exit("No matching monitor in monitors.xml. Pass the connector name, for example: map-touch.sh DP-3")
-print(*best[:3])
+print("\t".join(best[:3]))
 PY
 )
   SCHEMA_PATH="/org/gnome/desktop/peripherals/touchscreens/$VIDPID/"
