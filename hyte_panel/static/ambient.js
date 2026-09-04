@@ -1,13 +1,16 @@
 /* Ambient light behind the glass: a slow two-color cellular automaton.
-   Ported from fantasy-app's ambient-glow (four colors) down to the panel's two
-   accents. The primary and secondary lighting colors start in random corners on
-   a coarse grid and creep into each other; a color that over-expands weakens,
-   and one squeezed below a floor dies and is absorbed, re-seeding in its own
-   corner later so the field never goes flat. Every load draws a fresh seed, a
-   fresh corner per color and a fresh pecking order (distinct weights: the
-   dominant color seeds larger, pushes and holds harder, and gets more territory
-   before it weakens). The order reshuffles every 5–15 s so the two keep
-   fighting; the corners hold until a refresh. Steps are interpolated so the
+   Ported from fantasy-app's ambient-glow (four colors in four corners) down to
+   the panel's two accents, seeded as ten blobs. The primary and secondary
+   lighting colors start on a jittered checkerboard of ten spots across the
+   grid, alternating color so every blob borders the other, and creep into each
+   other until the field is covered; a color that over-expands weakens, and one
+   squeezed below a floor dies and is absorbed, re-seeding on its own spots
+   later so the field never goes flat. Every load draws a fresh seed, fresh
+   spots and a fresh pecking order (distinct weights: the dominant color seeds
+   larger, pushes and holds harder, and gets more territory before it weakens).
+   The order reshuffles every 3–9 s and the drift keeps wandering, so the
+   field is never still: lava lamp, not wallpaper. The spots hold until a
+   refresh. Steps are interpolated so the
    field glides rather than ticks; it freezes for reduced-motion users.
    Positioning and blur live in style.css (.ambient-glow). Palette follows the
    lighting: app.js calls HyteAmbient.setPalette() from applyTheme(). */
@@ -15,13 +18,14 @@
   "use strict";
 
   const CELLS = 2600;          // grid area; the aspect follows the viewport
-  const TICK_MS = 1400;
-  const OVEREXTENDED = 0.45;   // base share past which a color weakens (scaled by weight)
+  const TICK_MS = 1000;
+  const BLOBS = 10;            // seed spots, dealt alternately to the two colors
+  const OVEREXTENDED = 0.55;   // base share past which a color weakens (scaled by weight)
   const DEATH = 0.012;         // share below which a color dies
   const RANK_WEIGHTS = [1.35, 0.7]; // dominant, weakest
   const RESPAWN_TICKS = 40;
   const WARMUP_TICKS = 9;      // start ~12 s in: regions already spread and meeting
-  const RESHUFFLE_MS = [5000, 15000];
+  const RESHUFFLE_MS = [3000, 9000];
   const DIM = 0.45;            // how far each accent is pulled toward the page color
   const PAGE = -1;
   const COLORS = 2;
@@ -72,7 +76,8 @@
   let nextShuffle = 0;
   const scheduleShuffle = (now) =>
     (nextShuffle = now + RESHUFFLE_MS[0] + Math.random() * (RESHUFFLE_MS[1] - RESHUFFLE_MS[0]));
-  const cap = (c) => Math.min(0.6, OVEREXTENDED * weight[c]);
+  // The caps sum past 1 so the two colors can cover the whole field between them.
+  const cap = (c) => Math.min(0.8, OVEREXTENDED * weight[c]);
 
   // --- state ---
   let owner = new Int8Array(N).fill(PAGE);
@@ -89,10 +94,21 @@
         if (d + (Math.random() - 0.5) * 0.35 < 1) owner[y * W + x] = c;
       }
   }
-  // Two of the four corners are dealt out at random per load and then belong
-  // to their color for the life of the page (a respawn returns home).
-  const corners = [[0, 0], [W, 0], [W, H], [0, H]].sort(() => Math.random() - 0.5);
-  corners.slice(0, COLORS).forEach(([cx, cy], c) => seed(c, cx, cy, 0.3 + 0.15 * weight[c]));
+  // Ten spots on a jittered grid shaped to the viewport, colored as a
+  // checkerboard so neighbors alternate. They belong to their color for the
+  // life of the page (a respawn returns home). A random flip per load decides
+  // which color takes the even squares.
+  const cols = Math.max(1, Math.round(Math.sqrt(BLOBS * W / H)));
+  const rows = Math.ceil(BLOBS / cols);
+  const flip = Math.random() < 0.5 ? 1 : 0;
+  const spots = [[], []];
+  for (let k = 0; k < BLOBS; k++) {
+    const col = k % cols, row = Math.floor(k / cols);
+    const c = (col + row + flip) % COLORS;
+    spots[c].push([((col + 0.25 + Math.random() * 0.5) / cols) * W, ((row + 0.25 + Math.random() * 0.5) / rows) * H]);
+  }
+  const home = (c, r) => spots[c].forEach(([cx, cy]) => seed(c, cx, cy, r));
+  for (let c = 0; c < COLORS; c++) home(c, 0.12 + 0.05 * weight[c]);
 
   const counts = new Int32Array(COLORS + 1);
   const tally = new Float32Array(COLORS);
@@ -112,14 +128,14 @@
         for (let i = 0; i < N; i++) if (owner[i] === c) owner[i] = PAGE;
       } else if (!alive[c] && tick - deadSince[c] > RESPAWN_TICKS) {
         alive[c] = true;
-        seed(c, corners[c][0], corners[c][1], 0.08 + 0.05 * weight[c]);
+        home(c, 0.04 + 0.03 * weight[c]);
       }
     }
 
     // Slowly wandering drift per color: regions creep rather than boil.
     for (const w of wind) {
-      w[0] += (Math.random() - 0.5) * 0.3;
-      w[1] += (Math.random() - 0.5) * 0.3;
+      w[0] += (Math.random() - 0.5) * 0.45;
+      w[1] += (Math.random() - 0.5) * 0.45;
       const m = Math.hypot(w[0], w[1]) || 1;
       w[0] /= m;
       w[1] /= m;
@@ -138,7 +154,7 @@
             const o = owner[ny * W + nx];
             if (o === PAGE) continue;
             // Neighbors upwind of this cell push harder into it.
-            tally[o] += 1 + 0.7 * (-(dx * wind[o][0]) - dy * wind[o][1]);
+            tally[o] += 1 + 1.0 * (-(dx * wind[o][0]) - dy * wind[o][1]);
           }
         const i = y * W + x;
         const cur = owner[i];
@@ -151,7 +167,7 @@
         }
         if (best < 0) continue;
         const defense = cur === PAGE ? 1.1 : tally[cur] * weight[cur] * (share(cur) > cap(cur) ? 0.5 : 1) + 1.6;
-        if (bestT > defense && Math.random() < 0.5) next[i] = best;
+        if (bestT > defense && Math.random() < 0.6) next[i] = best;
       }
     owner = next;
   }
