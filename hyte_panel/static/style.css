@@ -47,7 +47,7 @@ body {
 }
 canvas { display: block; }
 
-/* The opaque two-color field is smoothed on its small canvas in ambient.js. */
+/* The opaque liquid surface is shaded on a small GPU canvas in ambient.js. */
 .ambient-glow { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
 .ambient-glow canvas { width: 100%; height: 100%; }
 
