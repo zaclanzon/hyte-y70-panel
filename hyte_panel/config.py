@@ -60,11 +60,30 @@ class AgentsConfig:
 
 @dataclass
 class ThemeConfig:
-    follow_runway: bool = True
-    runway_config: str = ""  # Empty = ~/.config/rgb-runway.json
-    # Used when the rgb-runway config is missing or follow_runway is false.
+    """Where the two accent colors come from. See collectors/theme.py."""
+    source: str = "auto"        # auto | file | openrgb | static
+    # file: a JSON file written by a lighting tool; two keys hold RGB triples.
+    file: str = ""
+    file_keys: list[str] = field(default_factory=lambda: ["primary", "secondary"])
+    # openrgb: the OpenRGB SDK server. Read only.
+    openrgb_host: str = "127.0.0.1"
+    openrgb_port: int = 6742
+    # static: a preset name (ember, aurora, sunset, ice, mono) or two colors.
+    preset: str = ""
     primary: list[int] = field(default_factory=lambda: [255, 0, 0])
     secondary: list[int] = field(default_factory=lambda: [0, 0, 255])
+
+
+def _theme_compat(raw: dict[str, Any] | None) -> dict[str, Any]:
+    """Map the pre-0.2 keys (follow_runway, runway_config) onto the new ones."""
+    raw = dict(raw or {})
+    if "follow_runway" in raw or "runway_config" in raw:
+        follow = raw.pop("follow_runway", True)
+        path = raw.pop("runway_config", "") or "~/.config/rgb-runway.json"
+        raw.setdefault("source", "file" if follow else "static")
+        raw.setdefault("file", path)
+        raw.setdefault("file_keys", ["base_color", "stripe_color"])
+    return raw
 
 
 @dataclass
@@ -125,7 +144,7 @@ def parse_config(raw: dict[str, Any], source: str = "dict") -> Config:
         weather=_fill(WeatherConfig, raw.get("weather")),
         hardware=_fill(HardwareConfig, raw.get("hardware")),
         agents=_fill(AgentsConfig, raw.get("agents")),
-        theme=_fill(ThemeConfig, raw.get("theme")),
+        theme=_fill(ThemeConfig, _theme_compat(raw.get("theme"))),
         automata=_fill(AutomataConfig, raw.get("automata")),
         apps=apps,
         source=source,
@@ -134,6 +153,10 @@ def parse_config(raw: dict[str, Any], source: str = "dict") -> Config:
     if cfg.weather.units not in ("metric", "imperial"):
         cfg.weather.units = "metric"
     cfg.automata.cell = max(1, min(8, int(cfg.automata.cell)))
+    if cfg.theme.source not in ("auto", "file", "openrgb", "static"):
+        cfg.theme.source = "auto"
+    if not (isinstance(cfg.theme.file_keys, list) and len(cfg.theme.file_keys) == 2):
+        cfg.theme.file_keys = ["primary", "secondary"]
     return cfg
 
 

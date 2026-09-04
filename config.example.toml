@@ -37,12 +37,19 @@ process_patterns = ["claude", "codex", "aider", "gemini", "cursor-agent", "copil
 stale_seconds = 900     # Hide hook-reported agents with no events for this long
 
 [theme]
-# Accent colors follow the rgb-runway lighting config (base_color -> primary,
-# stripe_color -> secondary). Warnings use a blend of the two. The panel
-# re-reads the file whenever it changes, so the screen switches with the LEDs.
-follow_runway = true
-runway_config = ""      # Empty = ~/.config/rgb-runway.json
-primary = [255, 0, 0]   # Fallbacks when the file is missing or follow_runway = false
+# Two accent colors drive the whole look; a third is blended from them.
+# source: "auto" tries file, then openrgb, then static.
+source = "auto"
+# openrgb: read the current LED colors from an OpenRGB SDK server (read only).
+openrgb_host = "127.0.0.1"
+openrgb_port = 6742
+# file: a JSON file written by your lighting tool, watched for changes. Name the
+# two keys that hold RGB triples, for example ["base_color", "stripe_color"].
+file = ""
+file_keys = ["primary", "secondary"]
+# static: a preset (ember, aurora, sunset, ice, mono) or two colors.
+preset = ""
+primary = [255, 0, 0]
 secondary = [0, 0, 255]
 
 [automata]

@@ -1,6 +1,6 @@
 /* HYTE Panel — glassmorphism theme.
-   --accent / --accent-2 follow the rgb-runway Base and Stripe colors (set live from
-   app.js); --accent-3 is their blend and replaces every warning-yellow. Usage
+   --accent / --accent-2 are the two lighting accent colors (set live from app.js,
+   see collectors/theme.py); --accent-3 is their blend and replaces every warning-yellow. Usage
    gauges and bars use hard bands: stripe, then yellow (--usage-mid), then base
    (thresholds in heat() in app.js). The values here are only the defaults shown before the first
    snapshot arrives. */
@@ -17,9 +17,9 @@
   --edge-hi: rgba(255, 255, 255, 0.28);
   --text: #f2f5fb;
   --muted: rgba(226, 232, 245, 0.62);
-  --accent: #ff2d3f;      /* runway base color */
-  --accent-2: #3d7bff;    /* runway stripe color */
-  --accent-3: #b23cff;    /* base + stripe blend */
+  --accent: #ff2d3f;      /* primary accent */
+  --accent-2: #3d7bff;    /* secondary accent */
+  --accent-3: #b23cff;    /* blend of the two */
   --warn: var(--accent-3);
   --usage-mid: #ffd23f;   /* fixed yellow at the middle of the usage ramp (also USAGE_MID in app.js) */
   --bad: #ff2d3f;

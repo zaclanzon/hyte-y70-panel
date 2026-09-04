@@ -28,8 +28,10 @@ Layout sketch: [docs/layout.svg](docs/layout.svg)
   [automata/](automata/README.md).
 - **App buttons** (config and launch endpoint kept; the card is currently
   replaced by the automata card).
-- **Lighting-matched theme**. Accent colors track the rgb-runway Base and Stripe
-  colors and switch live when they change.
+- **Lighting-matched theme**. The accent colors follow your case lighting:
+  read live from an [OpenRGB](https://openrgb.org) server, or from a JSON file
+  your lighting tool writes, or set by hand from a preset. The whole page
+  recolors when the lights change.
 
 ## Requirements
 
@@ -185,7 +187,10 @@ The config file is `~/.config/hyte-panel/config.toml`. Start from
 | `weather` | `latitude`, `longitude`, `units` | Location and unit system. |
 | `hardware` | `disks`, `network_interface` | Mount points to show. Interface to graph. |
 | `agents` | `process_patterns` | Executable names that count as agents. |
-| `theme` | `follow_runway`, `runway_config` | Accent colors follow the rgb-runway `base_color` and `stripe_color`; warnings use their blend. |
+| `theme` | `source` | `auto` (default), `openrgb`, `file` or `static`. `auto` tries the file, then OpenRGB, then the static colors. |
+| `theme` | `openrgb_host`, `openrgb_port` | OpenRGB SDK server (default 127.0.0.1:6742). The two most common LED colors become the accents. Read only. |
+| `theme` | `file`, `file_keys` | A JSON file written by any lighting tool and the two keys that hold RGB triples. |
+| `theme` | `preset`, `primary`, `secondary` | Static colors: a preset (`ember`, `aurora`, `sunset`, `ice`, `mono`) or two RGB triples. |
 | `automata` | `enabled`, `rule`, `cell`, `attract_idle_seconds`, `attract_rotate_seconds`, `reactive` | Automata card: starting rule, cell size in pixels, idle time before rules rotate, hardware reactivity. |
 | `[[apps]]` | `desktop_id` or `command` | One block per button. |
 
@@ -229,7 +234,7 @@ curl -X POST http://127.0.0.1:8787/api/agents/status \
 | GET | `/api/snapshot` | One reading of all hardware, weather and agents. |
 | GET | `/api/weather?refresh=1` | Weather; `refresh=1` forces a fetch. |
 | GET | `/api/agents` | Agent list. |
-| GET | `/api/theme` | Accent colors derived from the rgb-runway config. |
+| GET | `/api/theme` | Accent colors and their source (`openrgb`, `file` or `static`). |
 | POST | `/api/agents/hook` | Claude Code hook payload (JSON on stdin). |
 | POST | `/api/agents/status` | Generic status: `{id, name, status, detail, cwd}`. |
 | DELETE | `/api/agents/{id}` | Remove a hook-reported agent. |

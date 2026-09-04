@@ -70,7 +70,7 @@
     };
   }
 
-  // ---- Theme: colors follow the rgb-runway lighting (see collectors/theme.py) -------
+  // ---- Theme: accent colors from the lighting or the config (see collectors/theme.py) ---
   const theme = { primary: "#ff2d3f", secondary: "#3d7bff", blend: "#b23cff" };
   const hexToRgb = (hex) => hex.slice(1).match(/../g).map((h) => parseInt(h, 16)).join(",");
   function applyTheme(t) {
