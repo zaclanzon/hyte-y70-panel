@@ -10,6 +10,27 @@ const set = (buf, W, x, y, s) => { buf[(y * W + x) * 4] = s; };
 const run = (rule, buf, W, H, n) => { let a = new Uint8Array(buf), b = grid(W, H); for (let i = 0; i < n; i++) { Core.step(rule, a, b, W, H); [a, b] = [b, a]; } return a; };
 const cells = (buf, W, H) => { const out = []; for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (get(buf, W, x, y)) out.push(`${x},${y}`); return out.sort(); };
 
+test("toroidal edges match a tiled grid, including single-cell dimensions", () => {
+  for (const entry of Core.RULES) {
+    const rule = Core.resolve(entry);
+    for (const [W, H] of [[1, 1], [1, 7], [7, 1], [7, 5]]) {
+      let seed = 42;
+      const small = Core.seedGrid(rule, W, H, () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 2 ** 32));
+      const BW = W * 3, BH = rule.family === FAMILY.ELEMENTARY ? H : H * 3;
+      const tiled = grid(BW, BH);
+      for (let y = 0; y < BH; y++) for (let x = 0; x < BW; x++) {
+        const o = ((y % H) * W + x % W) * 4;
+        tiled.set(small.subarray(o, o + 4), (y * BW + x) * 4);
+      }
+      const a = run(rule, small, W, H, 10), b = run(rule, tiled, BW, BH, 10);
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const i = (y * W + x) * 4, j = (y * BW + x) * 4;
+        assert.deepEqual(a.subarray(i, i + 4), b.subarray(j, j + 4), `${entry.id} ${W}x${H}`);
+      }
+    }
+  }
+});
+
 test("parseRule handles Life-like and Generations strings", () => {
   assert.deepEqual(Core.parseRule("B3/S23"), { birth: 0b1000, survive: 0b1100, states: 2, family: FAMILY.LIFE });
   assert.deepEqual(Core.parseRule("B36/S23"), { birth: 0b1001000, survive: 0b1100, states: 2, family: FAMILY.LIFE });

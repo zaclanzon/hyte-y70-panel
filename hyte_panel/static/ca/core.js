@@ -96,7 +96,7 @@
       // rows 1..H-1 copy the row below; row 0 is recomputed from itself
       dst.set(src.subarray(0, (H - 1) * W * 4), W * 4);
       for (let x = 0; x < W; x++) {
-        const l = src[((x + W - 1) % W) * 4], c = src[x * 4], r = src[((x + 1) % W) * 4];
+        const l = src[(x === 0 ? W - 1 : x - 1) * 4], c = src[x * 4], r = src[(x + 1 === W ? 0 : x + 1) * 4];
         const o = x * 4;
         dst[o] = (rule.wolfram >> ((l << 2) | (c << 1) | r)) & 1;
         dst[o + 1] = 0; dst[o + 2] = 0; dst[o + 3] = 0;
@@ -104,9 +104,10 @@
       return;
     }
     for (let y = 0; y < H; y++) {
-      const ym = ((y + H - 1) % H) * W, y0 = y * W, yp = ((y + 1) % H) * W;
+      // Only the edge wraps; avoid integer remainder for every cell.
+      const ym = (y === 0 ? H - 1 : y - 1) * W, y0 = y * W, yp = (y + 1 === H ? 0 : y + 1) * W;
       for (let x = 0; x < W; x++) {
-        const xm = (x + W - 1) % W, xp = (x + 1) % W;
+        const xm = x === 0 ? W - 1 : x - 1, xp = x + 1 === W ? 0 : x + 1;
         const i = y0 + x, o = i * 4;
         const s = src[o], age = src[o + 1], glow = src[o + 2];
         let target = 1;
