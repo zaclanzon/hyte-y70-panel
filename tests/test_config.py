@@ -49,3 +49,17 @@ def test_load_config_missing_falls_back_to_example(tmp_path):
     cfg = load_config(tmp_path / "missing.toml")
     assert "example" in cfg.source
     assert cfg.apps
+
+
+def test_automata_defaults_and_clamp():
+    from hyte_panel.config import parse_config
+
+    cfg = parse_config({})
+    assert cfg.automata.enabled is True
+    assert cfg.automata.rule == "life"
+    assert cfg.automata.cell == 2
+    assert cfg.automata.attract_idle_seconds == 45
+    cfg = parse_config({"automata": {"enabled": False, "cell": 99, "rule": "brain", "unknown": 1}})
+    assert cfg.automata.enabled is False
+    assert cfg.automata.cell == 8
+    assert cfg.automata.rule == "brain"

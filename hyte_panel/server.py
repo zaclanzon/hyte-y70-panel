@@ -57,6 +57,14 @@ class PanelState:
             },
             "weather": {"enabled": self.cfg.weather.enabled, "label": self.cfg.weather.label, "units": self.cfg.weather.units},
             "agents": {"enabled": self.cfg.agents.enabled},
+            "automata": {
+                "enabled": self.cfg.automata.enabled,
+                "rule": self.cfg.automata.rule,
+                "cell": self.cfg.automata.cell,
+                "attract_idle_seconds": self.cfg.automata.attract_idle_seconds,
+                "attract_rotate_seconds": self.cfg.automata.attract_rotate_seconds,
+                "reactive": self.cfg.automata.reactive,
+            },
             "apps": [a.to_public(i) for i, a in enumerate(self.cfg.apps)],
         }
 

@@ -79,3 +79,18 @@ def test_websocket_sends_config_then_agent_events(client):
         client.post("/api/agents/status", json={"id": "ws-test", "status": "working"})
         msg = ws.receive_json()
         assert msg["type"] == "agent" and msg["data"]["id"] == "hook:ws-test"
+
+
+def test_automata_card_and_module_are_served(client):
+    cfg = client.get("/api/config").json()
+    assert cfg["automata"]["enabled"] is True
+    assert cfg["automata"]["rule"] == "life"
+    assert set(cfg["automata"]) >= {"cell", "attract_idle_seconds", "attract_rotate_seconds", "reactive"}
+    index = client.get("/").text
+    assert 'id="ca-card"' in index
+    assert "/static/ca/ca.js" in index and "/static/ca/core.js" in index and "/static/ca/ca.css" in index
+    assert 'id="apps-grid"' not in index
+    for name in ("core.js", "ca.js", "ca.css"):
+        r = client.get(f"/static/ca/{name}")
+        assert r.status_code == 200, name
+    assert "CA.mount" in client.get("/static/app.js").text

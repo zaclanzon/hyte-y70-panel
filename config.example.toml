@@ -45,7 +45,18 @@ runway_config = ""      # Empty = ~/.config/rgb-runway.json
 primary = [255, 0, 0]   # Fallbacks when the file is missing or follow_runway = false
 secondary = [0, 0, 255]
 
+[automata]
+# Cellular automata card. Stands where the app buttons card was.
+enabled = true
+rule = "life"               # starting rule: life, highlife, brain, rule30, cyclic, ... (see static/ca/core.js)
+cell = 2                    # device pixels per cell
+attract_idle_seconds = 45   # rotate rules after this idle time; 0 = never
+attract_rotate_seconds = 120
+reactive = true             # CPU load, network traffic and agent activity feed the world
+
 # App buttons. Use "desktop_id" for installed apps (gtk-launch), or "command".
+# The apps card is currently replaced by the automata card; the launch endpoint
+# still works and the config is kept for when the card comes back.
 [[apps]]
 name = "Terminal"
 icon = "terminal"

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cellular automata playground</title>
+  <link rel="stylesheet" href="../hyte_panel/static/ca/ca.css">
+  <style>
+    /* Dev page: a 682 x 2560 HYTE-shaped frame with the panel's glass look, scaled to fit. */
+    :root {
+      --bg-0: #07060f; --bg-1: #120a22;
+      --glass: rgba(255,255,255,.055); --glass-strong: rgba(255,255,255,.14);
+      --edge: rgba(255,255,255,.12); --edge-hi: rgba(255,255,255,.28);
+      --text: #f2f5fb; --muted: rgba(226,232,245,.62);
+      --accent: #ff1c1c; --accent-2: #3f3fff; --accent-3: #ff237b;
+      --radius: 28px; --radius-sm: 18px;
+      font-family: "Inter", "Cantarell", "Noto Sans", system-ui, sans-serif; color-scheme: dark;
+    }
+    html, body { margin: 0; height: 100%; background: #030308; color: var(--text); font-size: 22px; }
+    body { display: flex; }
+    .side { width: 260px; padding: 20px; font-size: 14px; color: var(--muted); display: flex; flex-direction: column; gap: 14px; }
+    .side h1 { font-size: 16px; color: var(--text); margin: 0 0 4px; font-weight: 600; }
+    .side label { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .side input[type=color] { width: 44px; height: 28px; border: 0; background: none; padding: 0; }
+    .side select, .side button { font: inherit; background: #1a1830; color: var(--text); border: 1px solid var(--edge); border-radius: 8px; padding: 6px 8px; }
+    .side kbd { background: #1a1830; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+    .side p { margin: 0; line-height: 1.45; }
+    .viewport { flex: 1; display: flex; align-items: flex-start; justify-content: center; overflow: auto; padding: 16px; }
+    .device {
+      width: 682px; height: 2560px; flex: none; transform-origin: top center; position: relative; overflow: hidden;
+      border-radius: 18px; border: 6px solid #1b1b22; box-shadow: 0 30px 80px rgba(0,0,0,.7);
+      background: radial-gradient(120% 60% at 50% -10%, color-mix(in srgb, var(--accent-3) 16%, var(--bg-1)) 0%, var(--bg-1) 45%, var(--bg-0) 100%);
+      display: flex; flex-direction: column; gap: 14px; padding: 22px;
+    }
+    .device.full { transform: none !important; }
+    .card {
+      position: relative; border: 1px solid var(--edge); border-radius: var(--radius); padding: 22px;
+      background: linear-gradient(160deg, rgba(255,255,255,.10), rgba(255,255,255,.035) 60%, rgba(255,255,255,.05));
+      box-shadow: 0 18px 44px rgba(0,0,0,.42); backdrop-filter: blur(26px); -webkit-backdrop-filter: blur(26px);
+    }
+    .ghost { color: var(--muted); text-align: center; font-size: 20px; letter-spacing: 2px; text-transform: uppercase; }
+    .clock { text-align: center; font-size: 112px; font-weight: 200; letter-spacing: -2px; line-height: 1; }
+    .ca-card { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    .ca-card > .ca { flex: 1; }
+  </style>
+</head>
+<body>
+  <aside class="side">
+    <div><h1>CA playground</h1><p>Dev frame for the HYTE panel module. The card below stands where the Apps card is on the panel.</p></div>
+    <label>Base (LED) <input type="color" id="c1" value="#ff1c1c"></label>
+    <label>Stripe (LED) <input type="color" id="c2" value="#3f3fff"></label>
+    <label>Blend <input type="color" id="c3" value="#ff237b"></label>
+    <label>Cell size <select id="cell"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label>
+    <label>Engine <select id="engine"><option value="auto">auto</option><option value="gpu">gpu</option><option value="cpu">cpu</option></select></label>
+    <label>Attract idle <select id="idle"><option value="10">10 s</option><option value="45" selected>45 s</option><option value="0">off</option></select></label>
+    <button id="full">Toggle 1:1 size</button>
+    <p><kbd>space</kbd> play/pause · <kbd>s</kbd> step · <kbd>r</kbd> seed · <kbd>c</kbd> clear · <kbd>n</kbd> next rule<br>Drag to paint. Hold to stamp a pattern.</p>
+    <p id="info"></p>
+  </aside>
+  <div class="viewport">
+    <div class="device" id="device">
+      <div class="card"><div class="clock" id="clk">--:--</div></div>
+      <div class="card ghost">weather</div>
+      <div class="card ghost">cpu</div>
+      <div class="card ghost">gpu</div>
+      <div class="card ghost">memory · network</div>
+      <div class="card ghost">ai agents</div>
+      <section class="card ca-card"><div id="ca"></div></section>
+    </div>
+  </div>
+  <script src="../hyte_panel/static/ca/core.js"></script>
+  <script src="../hyte_panel/static/ca/ca.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const params = new URLSearchParams(location.search);
+    const fit = () => { const d = $("device"); if (d.classList.contains("full")) return; const s = Math.min(1, (innerHeight - 32) / 2560); d.style.transform = `scale(${s})`; d.style.marginBottom = `${-2560 * (1 - s)}px`; };
+    addEventListener("resize", fit); fit();
+    $("full").onclick = () => { $("device").classList.toggle("full"); fit(); };
+    setInterval(() => ($("clk").textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })), 1000);
+
+    let ca = null;
+    function boot() {
+      if (ca) ca.destroy();
+      const idle = +$("idle").value;
+      ca = CA.mount($("ca"), {
+        cell: +$("cell").value, engine: params.get("engine") || $("engine").value,
+        attract: idle ? { idle, rotate: 90 } : false, rule: params.get("rule") || "life",
+      });
+      $("info").textContent = `engine: ${ca.engine.kind} · grid ${ca.engine.W} x ${ca.engine.H}`;
+      window.ca = ca;
+    }
+    for (const id of ["cell", "engine", "idle"]) $(id).onchange = boot;
+    for (const [id, v] of [["c1", "--accent"], ["c2", "--accent-2"], ["c3", "--accent-3"]])
+      $(id).oninput = (e) => document.documentElement.style.setProperty(v, e.target.value);
+    addEventListener("keydown", (e) => {
+      if (e.target.tagName === "SELECT") return;
+      if (e.key === " ") { e.preventDefault(); ca.toggle(); }
+      else if (e.key === "s") ca.step(); else if (e.key === "r") ca.seed(); else if (e.key === "c") ca.clear();
+      else if (e.key === "n") { const rules = CA.RULES, i = rules.findIndex((r) => r.id === ca.rule.id); ca.setRule(rules[(i + 1) % rules.length].id); }
+    });
+    boot();
+  </script>
+</body>
+</html>

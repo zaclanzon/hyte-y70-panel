@@ -18,7 +18,14 @@ serves the page. A kiosk window shows the page full screen on the HYTE screen.
 - **Network** throughput and case fan speeds.
 - **AI agents** monitor. Shows Claude Code, Codex, Aider and other agent CLIs with
   a live status: working, waiting, needs attention, idle, ended.
-- **App buttons**. Large touch targets that start programs from the config.
+- **Automata**. A cellular automata playground: Life-like rules, Brian's
+  Brain, Wolfram's elementary rules and cyclic automata on the GPU. Paint with a
+  finger, hold to stamp a glider gun. Idle, it rotates rules on its own; CPU
+  load, network traffic and agent activity feed the world. Colors follow the
+  lighting theme. Module in `hyte_panel/static/ca/`, dev page and tests in
+  [automata/](automata/README.md).
+- **App buttons** (config and launch endpoint kept; the card is currently
+  replaced by the automata card).
 - **Lighting-matched theme**. Accent colors track the rgb-runway Base and Stripe
   colors and switch live when they change.
 
@@ -187,6 +194,7 @@ The config file is `~/.config/hyte-panel/config.toml`. Start from
 | `hardware` | `disks`, `network_interface` | Mount points to show. Interface to graph. |
 | `agents` | `process_patterns` | Executable names that count as agents. |
 | `theme` | `follow_runway`, `runway_config` | Accent colors follow the rgb-runway `base_color` and `stripe_color`; warnings use their blend. |
+| `automata` | `enabled`, `rule`, `cell`, `attract_idle_seconds`, `attract_rotate_seconds`, `reactive` | Automata card: starting rule, cell size in pixels, idle time before rules rotate, hardware reactivity. |
 | `[[apps]]` | `desktop_id` or `command` | One block per button. |
 
 Only apps from the config can start. The page cannot run arbitrary commands.
@@ -251,6 +259,8 @@ hyte_panel/
     weather.py         Open-Meteo client
     agents.py          Agent registry: hook events + process scan
   static/              index.html, style.css, app.js
+  static/ca/           automata module (core.js, ca.js, ca.css)
+automata/              automata dev page, tests and notes
 scripts/               install-ubuntu.sh, map-touch.sh
 systemd/               user service unit
 examples/              Claude Code hooks, report-status.sh

@@ -86,6 +86,25 @@
       const c = heat(+el.dataset.heat);
       if (el.tagName === "circle") el.style.stroke = c; else el.style.background = c;
     });
+    if (ca) ca.setTheme(theme);
+  }
+
+  // ---- Cellular automata card (static/ca, mounted from the config) -----------------
+  let ca = null;
+  function mountAutomata(cfg) {
+    const card = $("ca-card");
+    if (!card || !window.CA) return;
+    if (!cfg || !cfg.enabled) { card.hidden = true; return; }
+    if (ca) return;
+    try {
+      ca = window.CA.mount($("ca"), {
+        rule: cfg.rule, cell: cfg.cell, reactive: cfg.reactive, theme: theme,
+        attract: cfg.attract_idle_seconds > 0 ? { idle: cfg.attract_idle_seconds, rotate: cfg.attract_rotate_seconds } : false,
+      });
+    } catch (err) {
+      console.error("automata card failed", err);
+      card.hidden = true;
+    }
   }
   // ---- Sparkline -------------------------------------------------------------------
   function makeSpark(canvas, max = 100, points = 90) {
@@ -136,15 +155,18 @@
   function applyConfig(cfg) {
     config = cfg;
     $("version").textContent = `hyte-panel ${cfg.version}`;
-    const grid = $("apps-grid");
-    grid.innerHTML = "";
-    cfg.apps.forEach((app) => {
-      const btn = document.createElement("button");
-      btn.className = "app-btn";
-      btn.innerHTML = `${svg(app.icon)}<span>${app.name}</span>`;
-      btn.addEventListener("click", () => launchApp(app, btn));
-      grid.appendChild(btn);
-    });
+    const grid = $("apps-grid"); // absent while the automata card stands in for the apps card
+    if (grid) {
+      grid.innerHTML = "";
+      cfg.apps.forEach((app) => {
+        const btn = document.createElement("button");
+        btn.className = "app-btn";
+        btn.innerHTML = `${svg(app.icon)}<span>${app.name}</span>`;
+        btn.addEventListener("click", () => launchApp(app, btn));
+        grid.appendChild(btn);
+      });
+    }
+    mountAutomata(cfg.automata);
     if (!cfg.weather.enabled) $("weather-card").hidden = true;
     if (!cfg.agents.enabled) $("agents-card").hidden = true;
     setupDim(cfg.display.dim_after_seconds);
@@ -152,15 +174,16 @@
 
   async function launchApp(app, btn) {
     btn.classList.add("pressed");
-    $("launch-status").textContent = `Starting ${app.name}`;
+    const statusEl = $("launch-status") || { textContent: "" };
+    statusEl.textContent = `Starting ${app.name}`;
     try {
       const r = await fetch(`/api/launch/${app.index}`, { method: "POST" });
       if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
       btn.classList.remove("error");
-      setTimeout(() => ($("launch-status").textContent = ""), 3000);
+      setTimeout(() => (statusEl.textContent = ""), 3000);
     } catch (err) {
       btn.classList.add("error");
-      $("launch-status").textContent = `${app.name}: ${err.message}`;
+      statusEl.textContent = `${app.name}: ${err.message}`;
     } finally {
       setTimeout(() => btn.classList.remove("pressed"), 250);
     }
@@ -243,6 +266,7 @@
 
     renderWeather(s.weather);
     renderAgents(s.agents || []);
+    if (ca) ca.onSnapshot(s);
   }
 
   const agentCache = new Map();
@@ -276,7 +300,8 @@
     const dim = $("dim");
     if (dimTimer) clearTimeout(dimTimer);
     if (!seconds || seconds <= 0) { dim.hidden = true; return; }
-    const arm = () => { clearTimeout(dimTimer); dim.hidden = true; dimTimer = setTimeout(() => (dim.hidden = false), seconds * 1000); };
+    // The automata card stops stepping while the panel is dimmed.
+    const arm = () => { clearTimeout(dimTimer); dim.hidden = true; if (ca) ca.setPaused(false); dimTimer = setTimeout(() => { dim.hidden = false; if (ca) ca.setPaused(true); }, seconds * 1000); };
     ["pointerdown", "touchstart", "keydown"].forEach((ev) => document.addEventListener(ev, arm, { passive: true }));
     arm();
   }

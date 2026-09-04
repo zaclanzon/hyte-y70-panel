@@ -68,6 +68,17 @@ class ThemeConfig:
 
 
 @dataclass
+class AutomataConfig:
+    """Cellular automata card (static/ca). Replaces the app buttons card."""
+    enabled: bool = True
+    rule: str = "life"          # starting rule id, see static/ca/core.js RULES
+    cell: int = 2               # device pixels per cell
+    attract_idle_seconds: int = 45     # idle time before the card starts rotating rules; 0 = never
+    attract_rotate_seconds: int = 120  # how long each rule runs in attract mode
+    reactive: bool = True       # CPU, network and agent activity feed the world
+
+
+@dataclass
 class AppButton:
     name: str
     icon: str = "app"
@@ -86,6 +97,7 @@ class Config:
     hardware: HardwareConfig = field(default_factory=HardwareConfig)
     agents: AgentsConfig = field(default_factory=AgentsConfig)
     theme: ThemeConfig = field(default_factory=ThemeConfig)
+    automata: AutomataConfig = field(default_factory=AutomataConfig)
     apps: list[AppButton] = field(default_factory=list)
     source: str = "defaults"
 
@@ -114,12 +126,14 @@ def parse_config(raw: dict[str, Any], source: str = "dict") -> Config:
         hardware=_fill(HardwareConfig, raw.get("hardware")),
         agents=_fill(AgentsConfig, raw.get("agents")),
         theme=_fill(ThemeConfig, raw.get("theme")),
+        automata=_fill(AutomataConfig, raw.get("automata")),
         apps=apps,
         source=source,
     )
     cfg.server.refresh_seconds = max(0.25, float(cfg.server.refresh_seconds))
     if cfg.weather.units not in ("metric", "imperial"):
         cfg.weather.units = "metric"
+    cfg.automata.cell = max(1, min(8, int(cfg.automata.cell)))
     return cfg
 
 

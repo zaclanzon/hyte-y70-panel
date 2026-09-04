@@ -186,7 +186,11 @@ body::after {
 .agent-side b { display: block; color: var(--text); font-size: 18px; font-weight: 500; text-transform: capitalize; }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 
-/* Apps */
+/* Cellular automata card: takes the remaining height of the column */
+.ca-card { flex: 1; display: flex; flex-direction: column; min-height: 560px; }
+.ca-card > .ca { flex: 1; min-height: 0; }
+
+/* Apps (card currently replaced by the automata card; styles kept) */
 .apps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .app-btn {
   position: relative; overflow: hidden;
@@ -218,6 +222,7 @@ body::after {
   .clock { font-size: 96px; }
   .stats-grid { grid-column: 1 / -1; grid-template-columns: repeat(4, 1fr); }
   .agents-card { grid-column: 1 / 3; }
+  .ca-card { grid-column: 1 / -1; min-height: 640px; }
   .foot { grid-column: 1 / -1; }
   .ring { width: 150px; height: 150px; }
 }

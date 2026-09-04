@@ -1,0 +1,45 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>gpu test</title><link rel="stylesheet" href="../../hyte_panel/static/ca/ca.css">
+<style>body{background:#111;color:#eee;font:14px monospace} #host{width:400px;height:300px} pre{white-space:pre-wrap}</style></head>
+<body><div id="host"></div><pre id="out"></pre>
+<script src="../../hyte_panel/static/ca/core.js"></script><script src="../../hyte_panel/static/ca/ca.js"></script>
+<script>
+// For every rule: seed on the GPU, copy the seed to a CPU reference, step both
+// N times, compare every byte. Then paint a stamp on both and compare again.
+const report = (obj) => { const s = JSON.stringify(obj); try { window.webkit.messageHandlers.result.postMessage(s); } catch (e) { document.title = "RESULT:" + s; } };
+(async function () {
+  const W = 64, H = 48, N = 25, results = [];
+  const rules = [...CA.RULES, { id: "random", name: "Random", rule: "B368/S245", density: 0.4 }];
+  let ca;
+  try { ca = CA.mount(document.getElementById("host"), { size: { w: W, h: H }, autoplay: false, engine: "gpu", attract: false, header: false, theme: { primary: "#f00", secondary: "#00f", blend: "#f0f" } }); }
+  catch (e) { report({ ok: false, error: String(e) }); return; }
+  const diff = (a, b) => { let n = 0, first = -1; for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) { n++; if (first < 0) first = i; } return { n, first }; };
+  for (const r of rules) {
+    ca.setRule(r, { silent: true });
+    const rule = ca.rule;
+    const seed = ca.read();
+    let cpuA = new Uint8Array(seed), cpuB = new Uint8Array(seed.length);
+    ca.engine.step(N);
+    for (let i = 0; i < N; i++) { CACore.step(rule, cpuA, cpuB, W, H); [cpuA, cpuB] = [cpuB, cpuA]; }
+    const gpu = ca.read();
+    const d1 = diff(gpu, cpuA);
+    // paint a glider gun near the edge on both, step 10 more
+    ca.stamp(CA.STAMPS[4], 3, 4);
+    const afterStamp = ca.read();
+    const d2 = diff(afterStamp, afterStamp); // sanity
+    cpuA.set(afterStamp);
+    ca.engine.step(10);
+    for (let i = 0; i < 10; i++) { CACore.step(rule, cpuA, cpuB, W, H); [cpuA, cpuB] = [cpuB, cpuA]; }
+    const d3 = diff(ca.read(), cpuA);
+    const pop = CACore.measure(rule, gpu, W, H).pop;
+    results.push({ id: r.id, pop, mismatch: d1.n, firstAt: d1.first, mismatchAfterStamp: d3.n });
+    // render once to make sure the draw shader is happy
+    ca.engine.render({ young: [0, 0, 1], old: [1, 0, 0], dying: [1, 0, 1] });
+  }
+  const gl = ca.engine.gl, glErr = gl.getError();
+  const ok = results.every((r) => r.mismatch === 0 && r.mismatchAfterStamp === 0) && glErr === 0;
+  const out = { ok, glError: glErr, results };
+  document.getElementById("out").textContent = JSON.stringify(out, null, 1);
+  report(out);
+})();
+</script></body></html>

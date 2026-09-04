@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
   <title>HYTE Panel</title>
   <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/ca/ca.css">
 </head>
 <body>
   <main id="panel" class="panel">
@@ -87,9 +88,9 @@
       </div>
     </section>
 
-    <section class="card apps-card">
-      <div class="stat-head"><span class="stat-title">Apps</span><span class="stat-sub" id="launch-status"></span></div>
-      <div class="apps-grid" id="apps-grid"></div>
+    <!-- Cellular automata playground (static/ca). Stands where the app buttons card was. -->
+    <section class="card ca-card" id="ca-card">
+      <div id="ca"></div>
     </section>
 
     <footer class="foot">
@@ -99,6 +100,8 @@
   </main>
 
   <div id="dim" class="dim" hidden></div>
+  <script src="/static/ca/core.js"></script>
+  <script src="/static/ca/ca.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>
