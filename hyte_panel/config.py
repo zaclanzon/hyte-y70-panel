@@ -240,7 +240,7 @@ def load_config(path: str | os.PathLike | None = None) -> Config:
             cfg = parse_config(tomllib.load(fh), source=str(p))
             cfg.path = str(p)
             return cfg
-    example = Path(__file__).resolve().parent.parent / "config.example.toml"
+    example = Path(__file__).resolve().parent / "data" / "config.example.toml"
     cfg = Config()
     if example.is_file():
         with example.open("rb") as fh:

@@ -14,7 +14,7 @@ def test_defaults():
 
 
 def test_example_config_parses():
-    with (ROOT / "config.example.toml").open("rb") as fh:
+    with (ROOT / "hyte_panel" / "data" / "config.example.toml").open("rb") as fh:
         cfg = parse_config(tomllib.load(fh), source="example")
     assert cfg.weather.label == "Sydney"
     assert len(cfg.apps) >= 5

@@ -162,6 +162,100 @@ def install_desktop_entry(exec_cmd: str | None = None, data_home: str | os.PathL
     return written
 
 
+def _config_home(config_home=None) -> Path:
+    return Path(config_home) if config_home else Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config")
+
+
+def systemd_user_available() -> bool:
+    """True when this session has a systemd user manager to talk to."""
+    systemctl = shutil.which("systemctl")
+    if not systemctl:
+        return False
+    try:
+        r = subprocess.run([systemctl, "--user", "show-environment"], capture_output=True, text=True, timeout=5)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return r.returncode == 0
+
+
+def install_service(exec_cmd: str | None = None, config_home: str | os.PathLike | None = None,
+                    use_systemd: bool | None = None) -> tuple[Path, str]:
+    """Make the panel start with the session.
+
+    With a systemd user manager: write and enable hyte-panel.service. Without
+    one: write an XDG autostart entry, which every desktop honours.
+    Returns (path written, "systemd" | "autostart")."""
+    exec_cmd = exec_cmd or launcher_command()
+    home = _config_home(config_home)
+    if use_systemd is None:
+        use_systemd = systemd_user_available()
+    if use_systemd:
+        unit_dir = home / "systemd" / "user"
+        unit_dir.mkdir(parents=True, exist_ok=True)
+        unit = unit_dir / SERVICE
+        unit.write_text((DATA_DIR / "hyte-panel.service").read_text(encoding="utf-8").replace("__EXEC__", exec_cmd), encoding="utf-8")
+        systemctl = shutil.which("systemctl")
+        if systemctl:
+            subprocess.run([systemctl, "--user", "daemon-reload"], capture_output=True, timeout=30, check=False)
+            subprocess.run([systemctl, "--user", "enable", SERVICE], capture_output=True, timeout=30, check=False)
+        return unit, "systemd"
+    auto_dir = home / "autostart"
+    auto_dir.mkdir(parents=True, exist_ok=True)
+    entry = auto_dir / f"{APP_ID}.desktop"
+    entry.write_text(
+        "[Desktop Entry]\nType=Application\nName=HYTE Panel\nComment=Start the HYTE panel with the session\n"
+        f"Exec={exec_cmd} run\nIcon={APP_ID}\nTerminal=false\nX-GNOME-Autostart-enabled=true\n", encoding="utf-8")
+    return entry, "autostart"
+
+
+def install_config(config_home: str | os.PathLike | None = None) -> tuple[Path, bool]:
+    """Copy the example config into place unless one exists. Returns (path, created)."""
+    path = _config_home(config_home) / "hyte-panel" / "config.toml"
+    if path.is_file():
+        return path, False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(DATA_DIR / "config.example.toml", path)
+    return path, True
+
+
+def environment_checks() -> list[tuple[str, bool, str]]:
+    """(name, ok, note) for the things the panel needs beyond Python."""
+    out = []
+    try:
+        import gi
+
+        gi.require_version("Gtk", "4.0")
+        from gi.repository import Gtk  # noqa: F401
+        gtk = True
+    except (ImportError, ValueError):
+        gtk = False
+    out.append(("GTK4 (PyGObject)", gtk, "" if gtk else "kiosk falls back to Chromium; install your distro's python gobject + gtk4 packages"))
+    try:
+        import gi
+
+        gi.require_version("WebKit", "6.0")
+        from gi.repository import WebKit  # noqa: F401
+        wk = True
+    except (ImportError, ValueError):
+        wk = False
+    out.append(("WebKitGTK 6.0", wk, "" if wk else "needed for the GTK kiosk and the settings window"))
+    try:
+        import gi
+
+        gi.require_version("Adw", "1")
+        from gi.repository import Adw  # noqa: F401
+        adw = True
+    except (ImportError, ValueError):
+        adw = False
+    out.append(("libadwaita", adw, "" if adw else "optional: GNOME styling for the desktop windows"))
+    nv = shutil.which("nvidia-smi") is not None
+    out.append(("nvidia-smi", nv, "" if nv else "no GPU card data without the NVIDIA driver"))
+    sensors = any(Path("/sys/class/hwmon").glob("hwmon*")) if Path("/sys/class/hwmon").exists() else False
+    out.append(("hwmon sensors", sensors, "" if sensors else "no temperatures or fan speeds; run sensors-detect"))
+    out.append(("systemd user session", systemd_user_available(), "" if systemd_user_available() else "autostart entry is used instead of a service"))
+    return out
+
+
 # ---------------------------------------------------------------------------
 # GTK windows
 # ---------------------------------------------------------------------------

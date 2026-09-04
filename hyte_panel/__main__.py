@@ -87,6 +87,36 @@ def _install_desktop(args: argparse.Namespace) -> int:
     return 0
 
 
+def _install_service(args: argparse.Namespace) -> int:
+    from .desktop import install_service
+
+    path, kind = install_service(args.exec)
+    print(f"wrote {path} ({kind})")
+    return 0
+
+
+def _setup(args: argparse.Namespace) -> int:
+    """Everything after `pip install`: config, app grid entry, start with the session."""
+    from .desktop import environment_checks, install_config, install_desktop_entry, install_service, launcher_command
+
+    exec_cmd = args.exec or launcher_command()
+    path, created = install_config()
+    print(f"config   : {path} ({'created' if created else 'kept'})")
+    for p in install_desktop_entry(exec_cmd):
+        print(f"desktop  : {p}")
+    unit, kind = install_service(exec_cmd)
+    print(f"startup  : {unit} ({kind})")
+    print()
+    for name, ok, note in environment_checks():
+        print(f"  [{'ok' if ok else '--'}] {name}{': ' + note if note else ''}")
+    print()
+    if kind == "systemd":
+        print("Start it: open HYTE Panel from the app grid, or  systemctl --user start hyte-panel")
+    else:
+        print(f"Start it: {exec_cmd} run    (it will also start with your next login)")
+    return 0
+
+
 def _show_config(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
     print(f"config source: {cfg.source}")
@@ -111,6 +141,12 @@ def main(argv: list[str] | None = None) -> int:
     p_desk = sub.add_parser("install-desktop", help="add HYTE Panel to the app grid (.desktop file and icon)")
     p_desk.add_argument("--exec", help="command the launcher runs (default: this install's hyte-panel)")
     p_desk.set_defaults(func=_install_desktop)
+    p_svc = sub.add_parser("install-service", help="start the panel with the session (systemd user unit, or autostart entry)")
+    p_svc.add_argument("--exec", help="command to run (default: this install's hyte-panel)")
+    p_svc.set_defaults(func=_install_service)
+    p_setup = sub.add_parser("setup", help="after pip install: write config, app grid entry and startup, then check the environment")
+    p_setup.add_argument("--exec", help="command the launcher and service run (default: this install's hyte-panel)")
+    p_setup.set_defaults(func=_setup)
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     if not args.command:

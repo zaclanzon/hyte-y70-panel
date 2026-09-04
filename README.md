@@ -1,6 +1,6 @@
 # hyte-panel
 
-A dashboard for the **HYTE Y70 Touch** case screen on Linux. Clock, weather,
+A dashboard for the **HYTE Y70 Touch** case screen, for any Linux desktop. Clock, weather,
 CPU, GPU, memory, network, fan speeds, your AI coding agents, and a cellular
 automata playground you can paint on. Colors follow your case lighting.
 
@@ -22,20 +22,31 @@ The panel is a small web app that runs on your PC.
 
 ## Install
 
-Ubuntu 24.04 or 26.04, GNOME. NVIDIA driver for GPU data.
+Any Linux distribution with a desktop session. Python 3.11+. NVIDIA driver for
+GPU data. The installer knows the package names for Debian, Ubuntu, Fedora,
+Arch, openSUSE, Alpine and Void; on anything else it tells you what to install.
 
 ```bash
 git clone https://github.com/zaclanzon/hyte-y70-panel-linux.git ~/src/hyte-y70-panel
 cd ~/src/hyte-y70-panel
-scripts/install-ubuntu.sh        # asks for sudo once
+scripts/install.sh        # system packages (sudo once), a venv, config, app grid entry, autostart
 ```
 
-Then rotate the HYTE screen to portrait in Settings > Displays, run
-`scripts/map-touch.sh` so touches land on it, and open **HYTE Panel** from the
-app grid and press Start.
+Then rotate the HYTE screen to portrait in your display settings, run
+`scripts/map-touch.sh` so touches land on it, and open **HYTE Panel** from
+the app grid and press Start.
 
-The step-by-step checklist, with a check for each step, is in
-[docs/install.md](docs/install.md). Screen and driver notes are in
+Prefer pipx? The system packages for GTK4, WebKitGTK and PyGObject still come
+from your distro (see the installer for names), then:
+
+```bash
+pipx install --system-site-packages "hyte-panel[nvidia] @ git+https://github.com/zaclanzon/hyte-y70-panel-linux.git"
+hyte-panel setup          # config, app grid entry, systemd user unit or autostart entry, environment check
+```
+
+With systemd the panel runs as a user service; without it, an XDG autostart
+entry starts it at login. The step-by-step checklist is in
+[docs/install.md](docs/install.md), screen and driver notes in
 [docs/hyte-y70-ubuntu.md](docs/hyte-y70-ubuntu.md).
 
 Update later:
@@ -43,7 +54,7 @@ Update later:
 ```bash
 cd ~/src/hyte-y70-panel && git pull
 ~/.local/share/hyte-panel/venv/bin/pip install --quiet ".[nvidia]"
-systemctl --user restart hyte-panel
+systemctl --user restart hyte-panel      # or: hyte-panel run
 ```
 
 ## Use it
@@ -125,14 +136,15 @@ module is `hyte_panel/static/ca/` with its own tests in `automata/`.
 
 ```
 hyte_panel/
-  __main__.py    CLI: run | serve | window | settings | control | install-desktop | show-config
+  __main__.py    CLI: run | serve | window | setup | settings | control | show-config
   server.py      FastAPI app, WebSocket stream, settings and launch endpoints
   config.py      TOML config, defaults, save
   window.py      GTK4/WebKit kiosk window, Chromium fallback
-  desktop.py     control window, settings window, desktop entry
+  desktop.py     control window, settings window, desktop entry, service / autostart
+  data/          example config, .desktop file, icon, systemd unit
   collectors/    system, gpu, weather, agents, theme
   static/        index.html, style.css, app.js, settings.html, ca/
-scripts/         install-ubuntu.sh, map-touch.sh
+scripts/         install.sh, map-touch.sh
 docs/            install checklist, HYTE screen notes
 ```
 

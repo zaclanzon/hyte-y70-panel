@@ -1,0 +1,15 @@
+[Unit]
+Description=HYTE Y70 Touch panel dashboard
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=__EXEC__ run
+Restart=on-failure
+RestartSec=5
+# GNOME imports DISPLAY / WAYLAND_DISPLAY into the user manager at login.
+# If the window fails to open, run: systemctl --user import-environment DISPLAY WAYLAND_DISPLAY XDG_SESSION_TYPE
+
+[Install]
+WantedBy=graphical-session.target

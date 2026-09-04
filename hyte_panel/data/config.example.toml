@@ -1,0 +1,109 @@
+# hyte-panel configuration.
+# Copy this file to ~/.config/hyte-panel/config.toml and edit the values.
+
+[server]
+host = "127.0.0.1"      # Keep 127.0.0.1. The panel can launch programs.
+port = 8787
+refresh_seconds = 1.0   # Hardware sample interval
+
+[display]
+# HYTE Y70 Touch: 720 x 2560 (portrait). HYTE Y70 Touch Infinite: 1100 x 3840.
+width = 720
+height = 2560
+connector = ""          # Optional connector name, for example "DP-3". Empty = detect by size.
+backend = "auto"        # auto | gtk | chromium
+chromium = ""           # Optional path to a Chromium/Chrome binary for the chromium backend
+dim_after_seconds = 0   # 0 = never dim. Otherwise dim the panel after this idle time.
+
+[weather]
+enabled = true
+label = "Sydney"
+latitude = -33.87
+longitude = 151.21
+units = "metric"        # metric | imperial
+refresh_minutes = 15
+
+[hardware]
+gpu = true
+disks = ["/"]
+network_interface = ""  # Empty = sum of all interfaces
+
+[agents]
+enabled = true
+scan_processes = true
+# Process names that count as AI agents. Matched against the executable name
+# and the first script argument (for example "node .../claude").
+process_patterns = ["claude", "codex", "aider", "gemini", "cursor-agent", "copilot", "goose"]
+stale_seconds = 900     # Hide hook-reported agents with no events for this long
+
+[theme]
+# Two accent colors drive the whole look; a third is blended from them.
+# source: "auto" tries file, then openrgb, then static.
+source = "auto"
+# openrgb: read the current LED colors from an OpenRGB SDK server (read only).
+openrgb_host = "127.0.0.1"
+openrgb_port = 6742
+# file: a JSON file written by your lighting tool, watched for changes. Name the
+# two keys that hold RGB triples, for example ["base_color", "stripe_color"].
+file = ""
+file_keys = ["primary", "secondary"]
+# static: a preset (ember, aurora, sunset, ice, mono) or two colors.
+preset = ""
+primary = [255, 0, 0]
+secondary = [0, 0, 255]
+
+[layout]
+# Cards to show, top to bottom. Leave one out to hide it. Also editable from the
+# panel (sliders icon) or at http://127.0.0.1:8787/settings.
+widgets = ["clock", "weather", "cpu", "gpu", "memory", "network", "agents", "automata"]
+
+[automata]
+# Cellular automata card.
+enabled = true
+rule = "life"               # starting rule: life, highlife, brain, rule30, cyclic, ... (see static/ca/core.js)
+cell = 2                    # device pixels per cell
+attract_idle_seconds = 45   # rotate rules after this idle time; 0 = never
+attract_rotate_seconds = 120
+reactive = true             # CPU load, network traffic and agent activity feed the world
+
+# App buttons. Use "desktop_id" for installed apps (gtk-launch), or "command".
+# Add "apps" to layout.widgets to show the card.
+[[apps]]
+name = "Terminal"
+icon = "terminal"
+desktop_id = "org.gnome.Terminal"
+
+[[apps]]
+name = "Files"
+icon = "folder"
+desktop_id = "org.gnome.Nautilus"
+
+[[apps]]
+name = "Firefox"
+icon = "globe"
+desktop_id = "firefox_firefox"
+
+[[apps]]
+name = "VS Code"
+icon = "code"
+desktop_id = "code"
+
+[[apps]]
+name = "Steam"
+icon = "gamepad"
+desktop_id = "steam"
+
+[[apps]]
+name = "Monitor"
+icon = "activity"
+desktop_id = "org.gnome.SystemMonitor"
+
+[[apps]]
+name = "Settings"
+icon = "settings"
+desktop_id = "org.gnome.Settings"
+
+[[apps]]
+name = "Lock"
+icon = "lock"
+command = "loginctl lock-session"
