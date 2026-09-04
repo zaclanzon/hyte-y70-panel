@@ -67,6 +67,26 @@ def _run(args: argparse.Namespace) -> int:
                 server.kill()
 
 
+def _settings(args: argparse.Namespace) -> int:
+    from .desktop import run_settings_window
+
+    return run_settings_window(load_config(args.config), args.config)
+
+
+def _control(args: argparse.Namespace) -> int:
+    from .desktop import run_control_window
+
+    return run_control_window(load_config(args.config), args.config)
+
+
+def _install_desktop(args: argparse.Namespace) -> int:
+    from .desktop import install_desktop_entry
+
+    for path in install_desktop_entry(args.exec):
+        print(f"wrote {path}")
+    return 0
+
+
 def _show_config(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
     print(f"config source: {cfg.source}")
@@ -86,6 +106,11 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("window", help="open the kiosk window (server must be running)").set_defaults(func=_window)
     sub.add_parser("run", help="run server and window together (default)").set_defaults(func=_run)
     sub.add_parser("show-config", help="print the effective configuration").set_defaults(func=_show_config)
+    sub.add_parser("settings", help="open the settings window on the desktop").set_defaults(func=_settings)
+    sub.add_parser("control", help="open the control window: start, stop, settings, logs").set_defaults(func=_control)
+    p_desk = sub.add_parser("install-desktop", help="add HYTE Panel to the app grid (.desktop file and icon)")
+    p_desk.add_argument("--exec", help="command the launcher runs (default: this install's hyte-panel)")
+    p_desk.set_defaults(func=_install_desktop)
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     if not args.command:

@@ -6,7 +6,8 @@
 #   2. creates a virtualenv in ~/.local/share/hyte-panel/venv,
 #   3. installs this package into the venv,
 #   4. copies the example config to ~/.config/hyte-panel/config.toml (if missing),
-#   5. installs and enables the systemd user service.
+#   5. adds a desktop entry (control window + settings) to the app grid,
+#   6. installs and enables the systemd user service.
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -19,7 +20,7 @@ echo "==> Installing system packages (sudo)"
 sudo apt-get update -qq
 sudo apt-get install -y --no-install-recommends \
   python3 python3-venv python3-pip python3-gi python3-gi-cairo \
-  gir1.2-gtk-4.0 gir1.2-webkit-6.0 lm-sensors curl
+  gir1.2-gtk-4.0 gir1.2-webkit-6.0 gir1.2-adw-1 lm-sensors curl
 
 echo "==> Creating virtualenv in $VENV"
 mkdir -p "$DATA_DIR" "$CONFIG_DIR" "$UNIT_DIR"
@@ -35,6 +36,9 @@ else
   echo "==> Keeping existing config $CONFIG_DIR/config.toml"
 fi
 
+echo "==> Adding HYTE Panel to the app grid"
+"$VENV/bin/hyte-panel" install-desktop
+
 echo "==> Installing systemd user service"
 sed "s|__VENV__|$VENV|g" "$REPO_DIR/systemd/hyte-panel.service" > "$UNIT_DIR/hyte-panel.service"
 systemctl --user daemon-reload
@@ -48,7 +52,8 @@ Next steps:
   1. Edit $CONFIG_DIR/config.toml (weather location, app buttons).
   2. Rotate the HYTE screen to portrait in Settings > Displays (see docs/hyte-y70-ubuntu.md).
   3. Map the touch input to the HYTE screen:  $REPO_DIR/scripts/map-touch.sh
-  4. Start the panel:                          systemctl --user start hyte-panel
+  4. Start the panel: open "HYTE Panel" from the app grid and press Start,
+     or run:                                   systemctl --user start hyte-panel
      Logs:                                     journalctl --user -u hyte-panel -f
   5. Optional: add examples/claude-code-hooks.json to ~/.claude/settings.json
      so Claude Code sessions show up on the panel.

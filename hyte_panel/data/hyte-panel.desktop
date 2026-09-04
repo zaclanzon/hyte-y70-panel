@@ -1,0 +1,24 @@
+[Desktop Entry]
+Type=Application
+Name=HYTE Panel
+GenericName=Case screen dashboard
+Comment=Touch panel dashboard for the HYTE Y70 Touch case screen
+Exec=__EXEC__ control
+Icon=io.github.hyte_panel
+Terminal=false
+Categories=System;Monitor;
+Keywords=hyte;panel;dashboard;monitor;sensors;touch;
+StartupNotify=true
+Actions=settings;start;stop;
+
+[Desktop Action settings]
+Name=Settings
+Exec=__EXEC__ settings
+
+[Desktop Action start]
+Name=Start the panel
+Exec=systemctl --user start hyte-panel.service
+
+[Desktop Action stop]
+Name=Stop the panel
+Exec=systemctl --user stop hyte-panel.service

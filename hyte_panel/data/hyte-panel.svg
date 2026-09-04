@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1a1230"/><stop offset="1" stop-color="#07060f"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".16"/><stop offset="1" stop-color="#ffffff" stop-opacity=".04"/>
+    </linearGradient>
+    <radialGradient id="glowA" cx=".2" cy=".3" r=".7"><stop offset="0" stop-color="#ff2d3f" stop-opacity=".55"/><stop offset="1" stop-color="#ff2d3f" stop-opacity="0"/></radialGradient>
+    <radialGradient id="glowB" cx=".85" cy=".8" r=".7"><stop offset="0" stop-color="#3d7bff" stop-opacity=".6"/><stop offset="1" stop-color="#3d7bff" stop-opacity="0"/></radialGradient>
+  </defs>
+  <!-- the case screen, tall and rounded -->
+  <rect x="34" y="6" width="60" height="116" rx="14" fill="url(#bg)"/>
+  <rect x="34" y="6" width="60" height="116" rx="14" fill="url(#glowA)"/>
+  <rect x="34" y="6" width="60" height="116" rx="14" fill="url(#glowB)"/>
+  <rect x="34.5" y="6.5" width="59" height="115" rx="13.5" fill="none" stroke="#ffffff" stroke-opacity=".28"/>
+  <!-- glass cards -->
+  <rect x="42" y="14" width="44" height="18" rx="6" fill="url(#glass)" stroke="#ffffff" stroke-opacity=".18"/>
+  <rect x="42" y="38" width="44" height="24" rx="6" fill="url(#glass)" stroke="#ffffff" stroke-opacity=".18"/>
+  <circle cx="55" cy="50" r="7" fill="none" stroke="#ffffff" stroke-opacity=".2" stroke-width="3"/>
+  <path d="M55 43 a7 7 0 0 1 6.5 9.5" fill="none" stroke="#ff4d5c" stroke-width="3" stroke-linecap="round"/>
+  <rect x="66" y="45" width="16" height="3" rx="1.5" fill="#3d7bff"/>
+  <rect x="66" y="52" width="11" height="3" rx="1.5" fill="#ffffff" fill-opacity=".45"/>
+  <!-- the automata card: a glider -->
+  <rect x="42" y="68" width="44" height="46" rx="6" fill="url(#glass)" stroke="#ffffff" stroke-opacity=".18"/>
+  <g fill="#3d7bff">
+    <rect x="60" y="76" width="7" height="7" rx="1.5"/>
+    <rect x="68" y="84" width="7" height="7" rx="1.5" fill="#7d5cff"/>
+    <rect x="52" y="92" width="7" height="7" rx="1.5" fill="#ff4d5c"/>
+    <rect x="60" y="92" width="7" height="7" rx="1.5" fill="#ff4d5c"/>
+    <rect x="68" y="92" width="7" height="7" rx="1.5" fill="#ff4d5c"/>
+  </g>
+</svg>

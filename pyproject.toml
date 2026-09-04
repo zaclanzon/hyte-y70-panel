@@ -27,7 +27,7 @@ hyte-panel = "hyte_panel.__main__:main"
 include = ["hyte_panel*"]
 
 [tool.setuptools.package-data]
-hyte_panel = ["static/*", "static/ca/*"]
+hyte_panel = ["static/*", "static/ca/*", "data/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -62,7 +62,7 @@ def run_gtk(cfg: Config, url: str) -> int:
 
     class PanelApp(Gtk.Application):
         def __init__(self):
-            super().__init__(application_id="io.github.hyte_panel")
+            super().__init__(application_id="io.github.hyte_panel.Kiosk")
 
         def do_activate(self):
             win = Gtk.ApplicationWindow(application=self, title="HYTE Panel")

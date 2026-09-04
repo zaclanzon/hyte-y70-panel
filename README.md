@@ -44,7 +44,8 @@ Layout sketch: [docs/layout.svg](docs/layout.svg)
 - Python 3.11 or newer.
 - NVIDIA driver with `nvidia-smi` (for GPU data).
 - For the kiosk window: `python3-gi`, `gir1.2-gtk-4.0`, `gir1.2-webkit-6.0`,
-  or a Chromium/Chrome browser as a fallback.
+  or a Chromium/Chrome browser as a fallback. `gir1.2-adw-1` is optional and
+  gives the desktop windows the GNOME look.
 
 ## Install on your machine
 
@@ -119,6 +120,8 @@ nano ~/.config/hyte-panel/config.toml
 
 ### 7. Start the panel
 
+Open **HYTE Panel** from the app grid and press Start, or:
+
 ```bash
 systemctl --user start hyte-panel
 systemctl --user status hyte-panel
@@ -178,6 +181,19 @@ python3 -m venv --system-site-packages .venv
 Open `http://127.0.0.1:8787` in any browser to preview the panel. Use the
 device toolbar in the browser at 720 x 2560 to see the portrait layout.
 
+## On the desktop
+
+The installer adds **HYTE Panel** to the app grid. Opening it shows a small
+control window: whether the panel is running, Start / Stop / Restart, a
+Settings button, Open in browser, and the recent log. Right-click the icon for
+Settings, Start and Stop directly.
+
+```bash
+hyte-panel control          # the control window
+hyte-panel settings         # just the settings window (starts a server if none runs)
+hyte-panel install-desktop  # (re)write the desktop entry and icon
+```
+
 ## Customize the widgets
 
 Two ways, both live: the panel updates as soon as you save, no restart.
@@ -185,7 +201,9 @@ Two ways, both live: the panel updates as soon as you save, no restart.
 - **On the panel.** Tap the sliders icon at the bottom right. Every card gets
   up, down and hide buttons. Hidden widgets wait in a tray at the bottom; tap
   one to bring it back. Tap Done when finished.
-- **In a browser.** Open <http://127.0.0.1:8787/settings> on the same machine.
+- **In a window.** Press Settings in the control window, or run `hyte-panel
+  settings`. The same page opens in a browser at
+  <http://127.0.0.1:8787/settings>.
   Toggle and reorder widgets, and open one to change its options: weather
   location with a place search, disks to show, agent process names, the
   automata rule, app buttons. The Look section sets where the accent colors
@@ -271,7 +289,9 @@ curl -X POST http://127.0.0.1:8787/api/agents/status \
 
 ```
 hyte_panel/
-  __main__.py          CLI: run | serve | window | show-config
+  __main__.py          CLI: run | serve | window | settings | control | install-desktop | show-config
+  desktop.py           control window, settings window, desktop entry
+  data/                .desktop file and icon
   config.py            TOML config and defaults
   server.py            FastAPI app, WebSocket stream, launch endpoint
   window.py            GTK4/WebKit kiosk window, Chromium fallback
