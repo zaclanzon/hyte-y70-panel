@@ -68,6 +68,9 @@
     }
     void main() {
       vec2 p = (gl_FragCoord.xy - 0.5 * resolution) / min(resolution.x, resolution.y) * 2.5;
+      // Steady advection keeps the metal moving forward while folds evolve.
+      // 0.20 preserves the shared period of the rational wave frequencies.
+      p.y += time * 0.20;
       float h = surface(p);
       float dx = (surface(p + vec2(0.018, 0.0)) - h) / 0.018;
       float dy = (surface(p + vec2(0.0, 0.018)) - h) / 0.018;
@@ -146,7 +149,9 @@
   function frame(now) {
     raf = 0;
     if (!ready || document.hidden || motion.matches) { last = null; return; }
-    const dt = last === null ? 0 : Math.min((now - last) / 1000, 0.05);
+    // Follow elapsed time rather than slowing the flow on expensive frames.
+    // Visibility changes reset last, so resuming never catches up hidden time.
+    const dt = last === null ? 0 : Math.max(0, (now - last) / 1000);
     last = now;
     // All wave rates are integer hundredths: this shared period wraps
     // seamlessly and preserves float precision during multi-day kiosk runs.
