@@ -6,7 +6,9 @@ A touch panel dashboard for the **HYTE Y70 Touch** case screen on
 The panel is a local web app. A small Python server reads the hardware and
 serves the page. A kiosk window shows the page full screen on the HYTE screen.
 
-![Layout](docs/layout.svg)
+<img src="docs/screenshot.png" alt="The panel on the HYTE Y70 Touch screen" width="341">
+
+Layout sketch: [docs/layout.svg](docs/layout.svg)
 
 ## Widgets
 

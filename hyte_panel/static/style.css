@@ -67,7 +67,9 @@ body::after {
 @keyframes drift-b { to { transform: translate(-180px, -320px) scale(1.1); } }
 @keyframes drift-c { to { transform: translate(160px, -220px) scale(1.2); } }
 
-.panel { display: flex; flex-direction: column; gap: var(--gap); padding: var(--pad); max-width: 100%; min-height: 100%; position: relative; }
+/* The panel is exactly one screen tall and never scrolls: the automata card takes the remaining height. */
+.panel { display: flex; flex-direction: column; gap: var(--gap); padding: var(--pad); max-width: 100%; height: 100vh; overflow: hidden; position: relative; }
+.card { flex: none; }
 
 /* Glass card */
 .card {
@@ -168,7 +170,7 @@ body::after {
 
 /* Agents */
 .agent-summary { color: var(--muted); font-size: 18px; }
-.agent-list { display: flex; flex-direction: column; gap: 10px; }
+.agent-list { display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto; } /* about four agents; more scroll */
 .agent-empty { color: var(--muted); font-size: 19px; padding: 6px 0; }
 .agent { display: grid; grid-template-columns: 14px 1fr auto; gap: 16px; align-items: center; border-radius: var(--radius-sm); padding: 14px 18px; transition: background .3s, border-color .3s; }
 .agent .light { width: 14px; height: 14px; border-radius: 50%; background: var(--muted); }
@@ -187,7 +189,7 @@ body::after {
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 
 /* Cellular automata card: takes the remaining height of the column */
-.ca-card { flex: 1; display: flex; flex-direction: column; min-height: 560px; }
+.ca-card { flex: 1 1 0; display: flex; flex-direction: column; min-height: 240px; }
 .ca-card > .ca { flex: 1; min-height: 0; }
 
 /* Apps (card currently replaced by the automata card; styles kept) */
@@ -217,7 +219,7 @@ body::after {
 
 /* Landscape: multi-column when the screen is not rotated */
 @media (orientation: landscape) {
-  .panel { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: min-content; align-items: start; }
+  .panel { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: min-content; align-items: start; height: auto; min-height: 100vh; overflow: visible; }
   .clock-card { grid-column: 1 / -1; }
   .clock { font-size: 96px; }
   .stats-grid { grid-column: 1 / -1; grid-template-columns: repeat(4, 1fr); }
