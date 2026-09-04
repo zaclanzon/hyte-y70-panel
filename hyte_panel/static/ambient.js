@@ -10,7 +10,10 @@
    larger, pushes and holds harder, and gets more territory before it weakens).
    The order reshuffles every 3–9 s and the drift keeps wandering, so the
    field is never still: lava lamp, not wallpaper. The spots hold until a
-   refresh. Steps are interpolated so the
+   refresh. Deep inside a region, cells with no other color in reach rot away
+   to the page color: a speck opens in the center of a blob, repels the live
+   cells around it for a few ticks so it grows into a small void, then fades
+   and is grown over again. Steps are interpolated so the
    field glides rather than ticks; it freezes for reduced-motion users.
    Positioning and blur live in style.css (.ambient-glow). Palette follows the
    lighting: app.js calls HyteAmbient.setPalette() from applyTheme(). */
@@ -22,6 +25,9 @@
   const BLOBS = 10;            // seed spots, dealt alternately to the two colors
   const OVEREXTENDED = 0.55;   // base share past which a color weakens (scaled by weight)
   const DEATH = 0.012;         // share below which a color dies
+  const ROT_P = 0.05;          // per-tick chance an interior cell rots to the page color
+  const REPEL_P = 0.14;        // per-tick chance a live cell next to a fresh void joins it
+  const VOID_TICKS = 6;        // how long a void repels before it can be grown over
   const RANK_WEIGHTS = [1.35, 0.7]; // dominant, weakest
   const RESPAWN_TICKS = 40;
   const WARMUP_TICKS = 9;      // start ~12 s in: regions already spread and meeting
@@ -84,6 +90,7 @@
   let prev = new Int8Array(N).fill(PAGE);
   const wind = [0, 1].map(() => [Math.random() - 0.5, Math.random() - 0.5]);
   const alive = [true, true];
+  const hollow = new Uint8Array(N); // ticks of repulsion left in a rotted page cell
   const deadSince = [0, 0];
   let tick = 0;
 
@@ -146,18 +153,28 @@
     for (let y = 0; y < H; y++)
       for (let x = 0; x < W; x++) {
         tally.fill(0);
+        const i = y * W + x;
+        const cur = owner[i];
+        let same = 0;
+        let voidNear = 0;
         for (let dy = -1; dy <= 1; dy++)
           for (let dx = -1; dx <= 1; dx++) {
             if (!dx && !dy) continue;
             const nx = (x + dx + W) % W;
             const ny = Math.min(H - 1, Math.max(0, y + dy));
-            const o = owner[ny * W + nx];
-            if (o === PAGE) continue;
+            const j = ny * W + nx;
+            const o = owner[j];
+            if (o === PAGE) { voidNear = Math.max(voidNear, hollow[j]); continue; }
+            if (o === cur) same++;
             // Neighbors upwind of this cell push harder into it.
             tally[o] += 1 + 1.0 * (-(dx * wind[o][0]) - dy * wind[o][1]);
           }
-        const i = y * W + x;
-        const cur = owner[i];
+        if (cur !== PAGE) {
+          // Rot: buried cells open a speck; a fresh void repels its neighbors
+          // so the speck grows for a few ticks before it fades.
+          if (same === 8 && Math.random() < ROT_P) { next[i] = PAGE; hollow[i] = VOID_TICKS; continue; }
+          if (voidNear > 1 && Math.random() < REPEL_P * (voidNear / VOID_TICKS)) { next[i] = PAGE; hollow[i] = voidNear - 1; continue; }
+        }
         let best = -1;
         let bestT = 0;
         for (let c = 0; c < COLORS; c++) {
@@ -166,10 +183,11 @@
           if (t > bestT) { bestT = t; best = c; }
         }
         if (best < 0) continue;
-        const defense = cur === PAGE ? 1.1 : tally[cur] * weight[cur] * (share(cur) > cap(cur) ? 0.5 : 1) + 1.6;
+        const defense = cur === PAGE ? 1.1 + 2.5 * (hollow[i] / VOID_TICKS) : tally[cur] * weight[cur] * (share(cur) > cap(cur) ? 0.5 : 1) + 1.6;
         if (bestT > defense && Math.random() < 0.6) next[i] = best;
       }
     owner = next;
+    for (let i = 0; i < N; i++) if (hollow[i]) hollow[i]--;
   }
 
   // --- render: lerp between the previous and current grid ---
