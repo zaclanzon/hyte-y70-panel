@@ -45,7 +45,7 @@ shows the command and how to check the result.
 ### 1. Get the code
 
 ```bash
-git clone https://github.com/zaclanzon/hyte-y70-panel.git ~/src/hyte-y70-panel
+git clone https://github.com/zaclanzon/hyte-y70-panel-linux.git ~/src/hyte-y70-panel
 cd ~/src/hyte-y70-panel
 ```
 
