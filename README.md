@@ -6,6 +6,11 @@ A touch panel dashboard for the **HYTE Y70 Touch** case screen on
 The panel is a local web app. A small Python server reads the hardware and
 serves the page. A kiosk window shows the page full screen on the HYTE screen.
 
+Pick the widgets you want and their order from the panel itself or from a
+settings page in your browser. The colors follow your case lighting through
+OpenRGB, or a preset if you have none. A GPU-driven cellular automata card
+fills whatever space is left. No build step, no API keys, one Python venv.
+
 <img src="docs/screenshot.png" alt="The panel on the HYTE Y70 Touch screen" width="341">
 
 Layout sketch: [docs/layout.svg](docs/layout.svg)
