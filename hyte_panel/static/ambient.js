@@ -1,22 +1,9 @@
-/* Ambient light behind the glass: a slow two-color cellular automaton.
-   Ported from fantasy-app's ambient-glow (four colors in four corners) down to
-   the panel's two accents, seeded as ten blobs. The primary and secondary
-   lighting colors start on a jittered checkerboard of ten spots across the
-   grid, alternating color so every blob borders the other, and creep into each
-   other until the field is covered; a color that over-expands weakens, and one
-   squeezed below a floor dies and is absorbed, re-seeding on its own spots
-   later so the field never goes flat. Every load draws a fresh seed, fresh
-   spots and a fresh pecking order (distinct weights: the dominant color seeds
-   larger, pushes and holds harder, and gets more territory before it weakens).
-   The order reshuffles every 3–9 s and the drift keeps wandering, so the
-   field is never still: lava lamp, not wallpaper. The spots hold until a
-   refresh. Deep inside a region, cells with no other color in reach rot away
-   to the page color: a speck opens in the center of a blob, repels the live
-   cells around it for a few ticks so it grows into a small void, then fades
-   and is grown over again. Steps are interpolated so the
-   field glides rather than ticks; it freezes for reduced-motion users.
-   Positioning and blur live in style.css (.ambient-glow). Palette follows the
-   lighting: app.js calls HyteAmbient.setPalette() from applyTheme(). */
+/* Ambient light behind the glass: a slow red/blue cellular automaton.
+   Empty simulation cells inherit neighboring colors when painted, so both
+   accents fill the viewport. A blur on the small grid smooths the boundaries
+   before upscaling, with opaque edges and no full-screen CSS filter.
+   Steps are interpolated; reduced motion freezes the field. Palette follows
+   the lighting through HyteAmbient.setPalette() from app.js. */
 (function () {
   "use strict";
 
@@ -37,6 +24,8 @@
   const COLORS = 2;
 
   const hexToRgb = (hex) => {
+    // Registered CSS color properties may resolve to rgb() on the first paint.
+    if (!/^#[0-9a-f]{6}$/i.test(hex)) return cssRgb(hex);
     const n = parseInt(hex.slice(1), 16);
     return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
   };
@@ -190,15 +179,62 @@
     for (let i = 0; i < N; i++) if (hollow[i]) hollow[i]--;
   }
 
-  // --- render: lerp between the previous and current grid ---
+  // Extend the nearest occupied cells into gaps for rendering only. The
+  // simulation keeps its empty cells so the blobs can still travel and respawn.
+  function filledField(grid) {
+    const field = new Int8Array(grid);
+    const queue = new Int32Array(N);
+    let head = 0, tail = 0;
+    for (let i = 0; i < N; i++) if (field[i] !== PAGE) queue[tail++] = i;
+    if (!tail) return field.fill(0);
+    function visit(from, to) {
+      if (field[to] !== PAGE) return;
+      field[to] = field[from];
+      queue[tail++] = to;
+    }
+    while (head < tail) {
+      const i = queue[head++], x = i % W;
+      visit(i, x ? i - 1 : i + W - 1);
+      visit(i, x < W - 1 ? i + 1 : i - W + 1);
+      if (i >= W) visit(i, i - W);
+      if (i < N - W) visit(i, i + W);
+    }
+    return field;
+  }
+
+  // Blur on the small grid before the browser scales it. Three clamped box
+  // passes soften the contours without transparent fringes or a CSS filter.
   const img = ctx.createImageData(W, H);
   const px = img.data;
+  const blurRadius = Math.max(2, Math.round(Math.min(W, H) * 0.07));
+  function boxBlur(data, w, h, r) {
+    const tmp = new Uint8ClampedArray(data.length);
+    const span = 2 * r + 1;
+    for (let pass = 0; pass < 3; pass++) {
+      for (const [from, to, stride, len, lines] of [[data, tmp, 4, w, h], [tmp, data, 4 * w, h, w]]) {
+        for (let line = 0; line < lines; line++) {
+          const base = stride === 4 ? line * 4 * w : line * 4;
+          for (let ch = 0; ch < 3; ch++) {
+            let acc = 0;
+            for (let k = -r; k <= r; k++) acc += from[base + Math.min(len - 1, Math.max(0, k)) * stride + ch];
+            for (let i = 0; i < len; i++) {
+              to[base + i * stride + ch] = acc / span;
+              const add = Math.min(len - 1, i + r + 1), drop = Math.max(0, i - r);
+              acc += from[base + add * stride + ch] - from[base + drop * stride + ch];
+            }
+          }
+        }
+      }
+    }
+  }
   function draw(t) {
+    const before = filledField(prev), after = filledField(owner);
     for (let i = 0; i < N; i++) {
-      const c = mix(colorOf(prev[i]), colorOf(owner[i]), t);
+      const c = mix(colorOf(before[i]), colorOf(after[i]), t);
       const o = i * 4;
       px[o] = c[0]; px[o + 1] = c[1]; px[o + 2] = c[2]; px[o + 3] = 255;
     }
+    boxBlur(px, W, H, blurRadius);
     ctx.putImageData(img, 0, 0);
   }
 
