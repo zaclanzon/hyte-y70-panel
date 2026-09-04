@@ -26,8 +26,8 @@ Layout sketch: [docs/layout.svg](docs/layout.svg)
   load, network traffic and agent activity feed the world. Colors follow the
   lighting theme. Module in `hyte_panel/static/ca/`, dev page and tests in
   [automata/](automata/README.md).
-- **App buttons** (config and launch endpoint kept; the card is currently
-  replaced by the automata card).
+- **App buttons**. Large touch targets that start programs from the config.
+  Hidden by default; turn the card on in the settings.
 - **Lighting-matched theme**. The accent colors follow your case lighting:
   read live from an [OpenRGB](https://openrgb.org) server, or from a JSON file
   your lighting tool writes, or set by hand from a preset. The whole page
@@ -173,6 +173,22 @@ python3 -m venv --system-site-packages .venv
 Open `http://127.0.0.1:8787` in any browser to preview the panel. Use the
 device toolbar in the browser at 720 x 2560 to see the portrait layout.
 
+## Customize the widgets
+
+Two ways, both live: the panel updates as soon as you save, no restart.
+
+- **On the panel.** Tap the sliders icon at the bottom right. Every card gets
+  up, down and hide buttons. Hidden widgets wait in a tray at the bottom; tap
+  one to bring it back. Tap Done when finished.
+- **In a browser.** Open <http://127.0.0.1:8787/settings> on the same machine.
+  Toggle and reorder widgets, and open one to change its options: weather
+  location with a place search, disks to show, agent process names, the
+  automata rule, app buttons. The Look section sets where the accent colors
+  come from and offers presets and color pickers.
+
+Both write `~/.config/hyte-panel/config.toml`, the same file described below.
+Server address, port and screen size are only read at start.
+
 ## Configure
 
 The config file is `~/.config/hyte-panel/config.toml`. Start from
@@ -192,6 +208,7 @@ The config file is `~/.config/hyte-panel/config.toml`. Start from
 | `theme` | `file`, `file_keys` | A JSON file written by any lighting tool and the two keys that hold RGB triples. |
 | `theme` | `preset`, `primary`, `secondary` | Static colors: a preset (`ember`, `aurora`, `sunset`, `ice`, `mono`) or two RGB triples. |
 | `automata` | `enabled`, `rule`, `cell`, `attract_idle_seconds`, `attract_rotate_seconds`, `reactive` | Automata card: starting rule, cell size in pixels, idle time before rules rotate, hardware reactivity. |
+| `layout` | `widgets` | Cards to show, top to bottom: `clock`, `weather`, `cpu`, `gpu`, `memory`, `network`, `agents`, `automata`, `apps`. Unlisted cards are hidden. |
 | `[[apps]]` | `desktop_id` or `command` | One block per button. |
 
 Only apps from the config can start. The page cannot run arbitrary commands.
@@ -235,6 +252,10 @@ curl -X POST http://127.0.0.1:8787/api/agents/status \
 | GET | `/api/weather?refresh=1` | Weather; `refresh=1` forces a fetch. |
 | GET | `/api/agents` | Agent list. |
 | GET | `/api/theme` | Accent colors and their source (`openrgb`, `file` or `static`). |
+| GET | `/settings` | Settings page. |
+| GET | `/api/settings` | The editable config as JSON, plus the file path. |
+| PUT | `/api/settings` | Save a config (same shape), reload collectors, push the new config to every page. Same-origin only. |
+| GET | `/api/geocode?q=` | Place search for the weather settings (Open-Meteo). |
 | POST | `/api/agents/hook` | Claude Code hook payload (JSON on stdin). |
 | POST | `/api/agents/status` | Generic status: `{id, name, status, detail, cwd}`. |
 | DELETE | `/api/agents/{id}` | Remove a hook-reported agent. |
@@ -255,7 +276,7 @@ hyte_panel/
     gpu.py             NVIDIA via NVML or nvidia-smi
     weather.py         Open-Meteo client
     agents.py          Agent registry: hook events + process scan
-  static/              index.html, style.css, app.js
+  static/              index.html, style.css, app.js, settings.html
   static/ca/           automata module (core.js, ca.js, ca.css)
 automata/              automata dev page, tests and notes
 scripts/               install-ubuntu.sh, map-touch.sh

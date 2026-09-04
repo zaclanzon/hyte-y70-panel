@@ -63,3 +63,39 @@ def test_automata_defaults_and_clamp():
     assert cfg.automata.enabled is False
     assert cfg.automata.cell == 8
     assert cfg.automata.rule == "brain"
+
+
+def test_layout_defaults_and_validation():
+    import tomllib
+
+    from hyte_panel.config import DEFAULT_WIDGETS, config_to_dict, dump_toml, parse_config
+
+    cfg = parse_config({})
+    assert cfg.layout.widgets == DEFAULT_WIDGETS
+    assert cfg.shows("cpu") and not cfg.shows("apps")
+    cfg = parse_config({"layout": {"widgets": ["gpu", "bogus", "clock", "gpu", 3, "apps"]}})
+    assert cfg.layout.widgets == ["gpu", "clock", "apps"]
+    cfg = parse_config({"layout": {"widgets": "not a list"}})
+    assert cfg.layout.widgets == []
+
+    # dump -> parse round trip keeps every value
+    cfg = parse_config({"weather": {"label": "Zürich (old town) \"quoted\"", "latitude": 47.37}, "hardware": {"disks": ["/", "/data"]},
+                        "theme": {"primary": [1, 2, 3], "source": "static"}, "apps": [{"name": "Term", "command": "x"}],
+                        "layout": {"widgets": ["clock", "apps"]}})
+    text = dump_toml(config_to_dict(cfg))
+    again = parse_config(tomllib.loads(text))
+    assert config_to_dict(again) == config_to_dict(cfg)
+    assert "[[apps]]" in text and "[layout]" in text
+
+
+def test_save_and_load_config_round_trip(tmp_path):
+    from hyte_panel.config import load_config, parse_config, save_config
+
+    path = tmp_path / "sub" / "config.toml"
+    cfg = parse_config({"layout": {"widgets": ["clock"]}, "weather": {"label": "Here"}})
+    assert save_config(cfg, path) == path
+    loaded = load_config(path)
+    assert loaded.layout.widgets == ["clock"] and loaded.weather.label == "Here"
+    assert loaded.path == str(path)
+    missing = load_config(tmp_path / "nope.toml")
+    assert missing.path == str(tmp_path / "nope.toml"), "a missing file still knows where saves go"

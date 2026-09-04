@@ -52,8 +52,13 @@ preset = ""
 primary = [255, 0, 0]
 secondary = [0, 0, 255]
 
+[layout]
+# Cards to show, top to bottom. Leave one out to hide it. Also editable from the
+# panel (sliders icon) or at http://127.0.0.1:8787/settings.
+widgets = ["clock", "weather", "cpu", "gpu", "memory", "network", "agents", "automata"]
+
 [automata]
-# Cellular automata card. Stands where the app buttons card was.
+# Cellular automata card.
 enabled = true
 rule = "life"               # starting rule: life, highlife, brain, rule30, cyclic, ... (see static/ca/core.js)
 cell = 2                    # device pixels per cell
@@ -62,8 +67,7 @@ attract_rotate_seconds = 120
 reactive = true             # CPU load, network traffic and agent activity feed the world
 
 # App buttons. Use "desktop_id" for installed apps (gtk-launch), or "command".
-# The apps card is currently replaced by the automata card; the launch endpoint
-# still works and the config is kept for when the card comes back.
+# Add "apps" to layout.widgets to show the card.
 [[apps]]
 name = "Terminal"
 icon = "terminal"

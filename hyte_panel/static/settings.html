@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HYTE Panel settings</title>
+  <style>
+    :root {
+      --bg-0: #07060f; --bg-1: #120a22; --glass: rgba(255,255,255,.055); --glass-strong: rgba(255,255,255,.14);
+      --edge: rgba(255,255,255,.12); --edge-hi: rgba(255,255,255,.28); --text: #f2f5fb; --muted: rgba(226,232,245,.62);
+      --accent: #ff2d3f; --accent-2: #3d7bff; --accent-3: #b23cff; --good: #6ee7a0; --bad: #ff2d3f;
+      font-family: "Inter", "Cantarell", "Noto Sans", "Segoe UI", system-ui, sans-serif; color-scheme: dark;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; color: var(--text); }
+    body { font-size: 15px; line-height: 1.45; background: radial-gradient(120% 60% at 50% -10%, color-mix(in srgb, var(--accent-3) 16%, var(--bg-1)) 0%, var(--bg-1) 45%, var(--bg-0) 100%) fixed; }
+    header { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 16px; padding: 14px 28px; background: rgba(7,6,15,.75); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-bottom: 1px solid var(--edge); }
+    header h1 { font-size: 18px; font-weight: 600; margin: 0; }
+    header .path { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    header .status { color: var(--muted); font-size: 14px; }
+    header .status.ok { color: var(--good); } header .status.err { color: var(--bad); }
+    main { max-width: 980px; margin: 0 auto; padding: 24px 28px 120px; display: grid; gap: 20px; }
+    .card { position: relative; border: 1px solid var(--edge); border-radius: 22px; padding: 22px 24px; background: linear-gradient(160deg, rgba(255,255,255,.09), rgba(255,255,255,.03) 60%, rgba(255,255,255,.05)); box-shadow: 0 18px 44px rgba(0,0,0,.35); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+    .card h2 { margin: 0 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: 2.5px; color: var(--muted); font-weight: 600; }
+    .card .lead { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    .btn { border: 1px solid var(--edge); background: var(--glass); border-radius: 12px; padding: 8px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background .15s, border-color .15s; }
+    .btn:hover { background: var(--glass-strong); border-color: var(--edge-hi); }
+    .btn.primary { background: color-mix(in srgb, var(--accent-2) 45%, transparent); border-color: color-mix(in srgb, var(--accent-2) 70%, transparent); font-weight: 500; padding: 10px 22px; }
+    .btn.primary:hover { background: color-mix(in srgb, var(--accent-2) 65%, transparent); }
+    .btn.icon { width: 38px; height: 38px; padding: 0; justify-content: center; border-radius: 10px; }
+    .btn:disabled { opacity: .3; cursor: default; }
+    .btn svg { width: 18px; height: 18px; }
+    input[type=text], input[type=number], select, textarea { width: 100%; background: rgba(0,0,0,.28); border: 1px solid var(--edge); border-radius: 10px; padding: 9px 12px; outline: none; transition: border-color .15s; }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent-2); }
+    textarea { min-height: 84px; resize: vertical; font-family: ui-monospace, "JetBrains Mono", monospace; font-size: 13px; }
+    input[type=color] { width: 44px; height: 36px; border: 1px solid var(--edge); border-radius: 10px; background: transparent; padding: 2px; cursor: pointer; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px 18px; }
+    .field label { display: block; font-size: 12.5px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin-bottom: 6px; }
+    .field .help { color: var(--muted); font-size: 12.5px; margin-top: 5px; }
+    .field.wide { grid-column: 1 / -1; }
+    .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    /* switch */
+    .switch { position: relative; width: 46px; height: 26px; flex: none; }
+    .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .switch span { position: absolute; inset: 0; border-radius: 13px; background: rgba(255,255,255,.14); border: 1px solid var(--edge); transition: background .2s; cursor: pointer; }
+    .switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .2s; }
+    .switch input:checked + span { background: var(--accent-2); border-color: var(--accent-2); }
+    .switch input:checked + span::after { transform: translateX(20px); }
+    /* widget list */
+    .widgets { display: flex; flex-direction: column; gap: 8px; }
+    .widget { border: 1px solid var(--edge); border-radius: 16px; background: var(--glass); transition: opacity .2s; }
+    .widget.off { opacity: .55; }
+    .widget > summary { list-style: none; display: flex; align-items: center; gap: 14px; padding: 12px 14px; cursor: pointer; }
+    .widget > summary::-webkit-details-marker { display: none; }
+    .widget .name { font-size: 16px; font-weight: 500; flex: 1; }
+    .widget .name small { display: block; color: var(--muted); font-size: 13px; font-weight: 400; }
+    .widget .body { padding: 6px 16px 18px 76px; border-top: 1px solid var(--edge); }
+    .widget .body:empty { display: none; }
+    .widget .order { display: flex; gap: 4px; }
+    .caret { width: 18px; height: 18px; color: var(--muted); transition: transform .2s; }
+    details[open] .caret { transform: rotate(90deg); }
+    /* presets */
+    .presets { display: flex; flex-wrap: wrap; gap: 10px; }
+    .preset { border: 1px solid var(--edge); border-radius: 14px; padding: 8px 12px 8px 8px; background: var(--glass); cursor: pointer; display: flex; align-items: center; gap: 10px; }
+    .preset.on { border-color: var(--accent-2); box-shadow: 0 0 16px color-mix(in srgb, var(--accent-2) 30%, transparent); }
+    .swatch { display: flex; border-radius: 8px; overflow: hidden; width: 44px; height: 26px; }
+    .swatch i { flex: 1; }
+    .preview { height: 12px; border-radius: 6px; margin-top: 12px; background: linear-gradient(90deg, var(--p-primary, #f00), var(--p-blend, #f0f), var(--p-secondary, #00f)); }
+    /* apps table */
+    .apps { display: grid; grid-template-columns: 1.2fr 130px 1.4fr 1.6fr 38px; gap: 8px; align-items: center; }
+    .apps .head { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1.2px; }
+    .geo { position: relative; }
+    .geo-results { position: absolute; left: 0; right: 0; top: 100%; z-index: 5; margin-top: 4px; background: #14112a; border: 1px solid var(--edge-hi); border-radius: 12px; overflow: hidden; box-shadow: 0 14px 34px rgba(0,0,0,.5); }
+    .geo-results button { display: block; width: 100%; text-align: left; padding: 10px 14px; background: transparent; border: 0; cursor: pointer; }
+    .geo-results button:hover { background: var(--glass-strong); }
+    .geo-results small { color: var(--muted); margin-left: 8px; }
+    .hidden { display: none !important; }
+    .footer-note { color: var(--muted); font-size: 13px; text-align: center; }
+    .footer-note code { background: rgba(0,0,0,.3); padding: 1px 6px; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>HYTE Panel settings</h1>
+    <span class="path" id="path"></span>
+    <span class="status" id="status"></span>
+    <button class="btn" id="reload" title="Discard changes and reload">Reload</button>
+    <button class="btn primary" id="save">Save</button>
+  </header>
+  <main id="main">
+    <section class="card">
+      <h2>Widgets</h2>
+      <p class="lead">Choose what the panel shows and in what order. Open a widget to change its settings. You can also tap the sliders icon at the bottom of the panel itself to reorder by touch.</p>
+      <div class="widgets" id="widgets"></div>
+    </section>
+    <section class="card" id="look"></section>
+    <section class="card" id="screen"></section>
+    <p class="footer-note">Saving writes <code id="path2"></code> and updates the panel immediately. Server address, port and screen size are set in that file by hand and need a restart.</p>
+  </main>
+  <script src="/static/ca/core.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    const $ = (id) => document.getElementById(id);
+    const ICON = {
+      up: '<polyline points="6 15 12 9 18 15"/>', down: '<polyline points="6 9 12 15 18 9"/>', caret: '<polyline points="9 6 15 12 9 18"/>',
+      x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>', plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+      search: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+    };
+    const svg = (k, cls = "") => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[k]}</svg>`;
+    const APP_ICONS = ["terminal", "folder", "globe", "code", "gamepad", "activity", "settings", "lock", "music", "power", "chat", "camera", "app"];
+    const PRESETS = { ember: ["#ff0000", "#0000ff"], aurora: ["#00c88c", "#6e3cff"], sunset: ["#ff5a00", "#ff008c"], ice: ["#5ac8ff", "#ffffff"], mono: ["#e6e6f0", "#78788c"] };
+
+    // ---- schema -------------------------------------------------------------------------
+    const WIDGETS = {
+      clock: { name: "Clock", desc: "Time, date, hostname and uptime.", fields: [] },
+      weather: { name: "Weather", desc: "Current conditions and a 5-day strip from Open-Meteo. No API key.", fields: [
+        { path: "weather.label", label: "Place name", type: "geo", help: "Type a place and pick a result to fill in the coordinates.", wide: true },
+        { path: "weather.latitude", label: "Latitude", type: "number", step: 0.0001 },
+        { path: "weather.longitude", label: "Longitude", type: "number", step: 0.0001 },
+        { path: "weather.units", label: "Units", type: "select", options: ["metric", "imperial"] },
+        { path: "weather.refresh_minutes", label: "Refresh every (min)", type: "number", min: 5 },
+      ] },
+      cpu: { name: "CPU", desc: "Usage ring, temperature, clock, load, per-core bars and history.", fields: [] },
+      gpu: { name: "GPU", desc: "NVIDIA usage, temperature, power, clock, fan and VRAM.", fields: [
+        { path: "hardware.gpu", label: "Read NVIDIA data", type: "bool", help: "Uses NVML or nvidia-smi." },
+      ] },
+      memory: { name: "Memory & storage", desc: "RAM and the disks you list.", fields: [
+        { path: "hardware.disks", label: "Mount points", type: "list", help: "One per line, for example / or /home.", wide: true },
+      ] },
+      network: { name: "Network & fans", desc: "Throughput and fan speeds from the kernel sensors.", fields: [
+        { path: "hardware.network_interface", label: "Interface", type: "text", help: "Leave empty to sum all interfaces." },
+      ] },
+      agents: { name: "AI agents", desc: "Claude Code, Codex, Aider and friends, with live status from hooks.", fields: [
+        { path: "agents.scan_processes", label: "Find agents by scanning processes", type: "bool" },
+        { path: "agents.process_patterns", label: "Process names", type: "list", help: "One per line.", wide: true },
+        { path: "agents.stale_seconds", label: "Forget hook agents after (s)", type: "number", min: 30 },
+      ] },
+      automata: { name: "Automata", desc: "The cellular automata playground. Paint with a finger, hold to stamp patterns.", fields: [
+        { path: "automata.rule", label: "Starting rule", type: "select", options: () => (window.CACore ? CACore.RULES.map((r) => [r.id, r.name]) : [["life", "Life"]]) },
+        { path: "automata.cell", label: "Cell size (px)", type: "number", min: 1, max: 8 },
+        { path: "automata.attract_idle_seconds", label: "Rotate rules after idle (s)", type: "number", min: 0, help: "0 keeps whatever you picked." },
+        { path: "automata.attract_rotate_seconds", label: "Seconds per rule", type: "number", min: 10 },
+        { path: "automata.reactive", label: "React to CPU, network and agents", type: "bool" },
+      ] },
+      apps: { name: "App buttons", desc: "Large touch buttons that start programs.", fields: [{ type: "apps", wide: true }] },
+    };
+    const LOOK = [
+      { path: "theme.source", label: "Colors come from", type: "select", options: [["auto", "Auto: lighting if available, else the colors below"], ["openrgb", "OpenRGB server"], ["file", "A JSON file my lighting tool writes"], ["static", "The colors below"]], wide: true },
+      { type: "presets", wide: true },
+      { path: "theme.primary", label: "Primary", type: "color" },
+      { path: "theme.secondary", label: "Secondary", type: "color" },
+      { path: "theme.openrgb_host", label: "OpenRGB host", type: "text", show: (c) => ["auto", "openrgb"].includes(c.theme.source) },
+      { path: "theme.openrgb_port", label: "OpenRGB port", type: "number", show: (c) => ["auto", "openrgb"].includes(c.theme.source) },
+      { path: "theme.file", label: "JSON file", type: "text", help: "Path to a file your lighting tool keeps updated.", show: (c) => ["auto", "file"].includes(c.theme.source) },
+      { path: "theme.file_keys", label: "Keys with RGB values", type: "pair", help: "Two key names, for example base_color and stripe_color.", show: (c) => ["auto", "file"].includes(c.theme.source) },
+    ];
+    const SCREEN = [
+      { path: "display.dim_after_seconds", label: "Dim the panel after (s)", type: "number", min: 0, help: "0 never dims. A touch wakes it." },
+      { path: "server.refresh_seconds", label: "Sample hardware every (s)", type: "number", min: 0.25, step: 0.25 },
+    ];
+
+    // ---- state ---------------------------------------------------------------------------
+    let cfg = null, widgetIds = [];
+    const get = (path) => path.split(".").reduce((o, k) => (o == null ? o : o[k]), cfg);
+    const set = (path, v) => { const ks = path.split("."), last = ks.pop(); ks.reduce((o, k) => o[k], cfg)[last] = v; };
+    const rgbToHex = (rgb) => "#" + (rgb || [0, 0, 0]).map((v) => Math.max(0, Math.min(255, +v | 0)).toString(16).padStart(2, "0")).join("");
+    const hexToRgb = (hex) => hex.slice(1).match(/../g).map((h) => parseInt(h, 16));
+    const dirty = () => setStatus("Unsaved changes", "");
+    function setStatus(text, cls) { const s = $("status"); s.textContent = text; s.className = `status ${cls}`; }
+
+    // ---- field rendering -----------------------------------------------------------------------
+    function field(f) {
+      if (f.type === "apps") return appsEditor();
+      if (f.type === "presets") return presets();
+      const wrap = document.createElement("div");
+      wrap.className = `field${f.wide ? " wide" : ""}`;
+      if (f.show) wrap.dataset.show = "1";
+      const id = `f-${f.path.replace(/\./g, "-")}`;
+      let input;
+      const v = get(f.path);
+      if (f.type === "bool") {
+        wrap.innerHTML = `<label for="${id}">${f.label}</label><label class="switch"><input type="checkbox" id="${id}"><span></span></label>`;
+        input = wrap.querySelector("input"); input.checked = !!v;
+        input.addEventListener("change", () => { set(f.path, input.checked); dirty(); });
+      } else if (f.type === "select") {
+        const opts = (typeof f.options === "function" ? f.options() : f.options).map((o) => (Array.isArray(o) ? o : [o, o]));
+        wrap.innerHTML = `<label for="${id}">${f.label}</label><select id="${id}">${opts.map(([val, name]) => `<option value="${val}">${name}</option>`).join("")}</select>`;
+        input = wrap.querySelector("select"); input.value = String(v);
+        input.addEventListener("change", () => { set(f.path, input.value); dirty(); rerenderVisibility(); });
+      } else if (f.type === "list" || f.type === "pair") {
+        wrap.innerHTML = `<label for="${id}">${f.label}</label><textarea id="${id}" ${f.type === "pair" ? 'rows="2"' : ""}></textarea>`;
+        input = wrap.querySelector("textarea"); input.value = (v || []).join("\n");
+        input.addEventListener("input", () => { set(f.path, input.value.split("\n").map((s) => s.trim()).filter(Boolean)); dirty(); });
+      } else if (f.type === "color") {
+        wrap.innerHTML = `<label for="${id}">${f.label}</label><div class="row"><input type="color" id="${id}"><span class="hex"></span></div>`;
+        input = wrap.querySelector("input"); input.value = rgbToHex(v); wrap.querySelector(".hex").textContent = input.value;
+        input.addEventListener("input", () => { set(f.path, hexToRgb(input.value)); wrap.querySelector(".hex").textContent = input.value; set("theme.preset", ""); dirty(); refreshPresets(); });
+      } else if (f.type === "geo") {
+        wrap.innerHTML = `<label for="${id}">${f.label}</label><div class="geo"><div class="row"><input type="text" id="${id}" placeholder="City or town" style="flex:1"><button class="btn icon" type="button" title="Search">${svg("search")}</button></div><div class="geo-results hidden"></div></div>`;
+        input = wrap.querySelector("input"); input.value = v || "";
+        input.addEventListener("input", () => { set(f.path, input.value); dirty(); });
+        const results = wrap.querySelector(".geo-results");
+        const search = async () => {
+          const q = input.value.trim(); if (q.length < 2) return;
+          results.classList.remove("hidden"); results.innerHTML = '<button type="button" disabled>Searching…</button>';
+          try {
+            const r = await (await fetch(`/api/geocode?q=${encodeURIComponent(q)}`)).json();
+            results.innerHTML = r.results.length ? r.results.map((x, i) => `<button type="button" data-i="${i}">${x.name}<small>${[x.region, x.country].filter(Boolean).join(", ")}</small></button>`).join("") : '<button type="button" disabled>No matches</button>';
+            results.querySelectorAll("button[data-i]").forEach((b) => b.addEventListener("click", () => {
+              const x = r.results[+b.dataset.i];
+              set("weather.label", x.name); set("weather.latitude", x.latitude); set("weather.longitude", x.longitude);
+              input.value = x.name; $("f-weather-latitude").value = x.latitude; $("f-weather-longitude").value = x.longitude;
+              results.classList.add("hidden"); dirty();
+            }));
+          } catch (e) { results.innerHTML = `<button type="button" disabled>Search failed: ${e.message}</button>`; }
+        };
+        wrap.querySelector(".btn").addEventListener("click", search);
+        input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); search(); } });
+        document.addEventListener("click", (e) => { if (!wrap.contains(e.target)) results.classList.add("hidden"); });
+      } else {
+        const attrs = f.type === "number" ? `type="number" ${f.step != null ? `step="${f.step}"` : 'step="any"'} ${f.min != null ? `min="${f.min}"` : ""} ${f.max != null ? `max="${f.max}"` : ""}` : 'type="text"';
+        wrap.innerHTML = `<label for="${id}">${f.label}</label><input ${attrs} id="${id}">`;
+        input = wrap.querySelector("input"); input.value = v == null ? "" : v;
+        input.addEventListener("input", () => { set(f.path, f.type === "number" ? (input.value === "" ? 0 : +input.value) : input.value); dirty(); });
+      }
+      if (f.help) wrap.insertAdjacentHTML("beforeend", `<div class="help">${f.help}</div>`);
+      wrap._show = f.show;
+      return wrap;
+    }
+    function rerenderVisibility() { document.querySelectorAll(".field[data-show]").forEach((el) => el.classList.toggle("hidden", !el._show(cfg))); }
+    function fields(list) { const g = document.createElement("div"); g.className = "grid"; list.forEach((f) => g.appendChild(field(f))); return g; }
+
+    function presets() {
+      const wrap = document.createElement("div"); wrap.className = "field wide";
+      wrap.innerHTML = `<label>Presets</label><div class="presets"></div><div class="preview"></div>`;
+      const box = wrap.querySelector(".presets");
+      Object.entries(PRESETS).forEach(([name, [a, b]]) => {
+        const btn = document.createElement("button"); btn.type = "button"; btn.className = "preset"; btn.dataset.name = name;
+        btn.innerHTML = `<span class="swatch"><i style="background:${a}"></i><i style="background:${b}"></i></span>${name}`;
+        btn.addEventListener("click", () => {
+          set("theme.preset", name); set("theme.primary", hexToRgb(a)); set("theme.secondary", hexToRgb(b));
+          $("f-theme-primary").value = a; $("f-theme-secondary").value = b;
+          $("f-theme-primary").parentElement.querySelector(".hex").textContent = a; $("f-theme-secondary").parentElement.querySelector(".hex").textContent = b;
+          dirty(); refreshPresets();
+        });
+        box.appendChild(btn);
+      });
+      return wrap;
+    }
+    function refreshPresets() {
+      document.querySelectorAll(".preset").forEach((b) => b.classList.toggle("on", b.dataset.name === (cfg.theme.preset || "").toLowerCase()));
+      const pv = document.querySelector(".preview");
+      if (pv) { pv.style.setProperty("--p-primary", rgbToHex(cfg.theme.primary)); pv.style.setProperty("--p-secondary", rgbToHex(cfg.theme.secondary)); pv.style.setProperty("--p-blend", rgbToHex(cfg.theme.primary.map((v, i) => Math.round((v * 3 + cfg.theme.secondary[i]) / 4)))); }
+    }
+
+    function appsEditor() {
+      const wrap = document.createElement("div"); wrap.className = "field wide";
+      const draw = () => {
+        wrap.innerHTML = `<div class="apps"><span class="head">Name</span><span class="head">Icon</span><span class="head">Desktop id</span><span class="head">or command</span><span></span></div>`;
+        const grid = wrap.querySelector(".apps");
+        cfg.apps.forEach((a, i) => {
+          grid.insertAdjacentHTML("beforeend", `<input type="text" data-k="name" data-i="${i}" value="${a.name.replace(/"/g, "&quot;")}"><select data-k="icon" data-i="${i}">${APP_ICONS.map((ic) => `<option ${ic === a.icon ? "selected" : ""}>${ic}</option>`).join("")}</select><input type="text" data-k="desktop_id" data-i="${i}" value="${(a.desktop_id || "").replace(/"/g, "&quot;")}" placeholder="org.gnome.Nautilus"><input type="text" data-k="command" data-i="${i}" value="${(a.command || "").replace(/"/g, "&quot;")}" placeholder="loginctl lock-session"><button class="btn icon" type="button" data-del="${i}" title="Remove">${svg("x")}</button>`);
+        });
+        grid.querySelectorAll("[data-k]").forEach((el) => el.addEventListener("input", () => { cfg.apps[+el.dataset.i][el.dataset.k] = el.value; dirty(); }));
+        grid.querySelectorAll("[data-del]").forEach((el) => el.addEventListener("click", () => { cfg.apps.splice(+el.dataset.del, 1); dirty(); draw(); }));
+        wrap.insertAdjacentHTML("beforeend", `<div class="row" style="margin-top:12px"><button class="btn" type="button" id="add-app">${svg("plus")} Add button</button><span class="help">Find desktop ids with <code>ls /usr/share/applications</code>.</span></div>`);
+        wrap.querySelector("#add-app").addEventListener("click", () => { cfg.apps.push({ name: "New app", icon: "app", desktop_id: "", command: "" }); dirty(); draw(); });
+      };
+      draw();
+      return wrap;
+    }
+
+    // ---- widgets list -----------------------------------------------------------------------------
+    function drawWidgets() {
+      const box = $("widgets"); box.innerHTML = "";
+      const order = [...cfg.layout.widgets, ...widgetIds.filter((w) => !cfg.layout.widgets.includes(w))];
+      order.forEach((id) => {
+        const meta = WIDGETS[id] || { name: id, desc: "", fields: [] };
+        const on = cfg.layout.widgets.includes(id), i = cfg.layout.widgets.indexOf(id);
+        const d = document.createElement("details"); d.className = `widget${on ? "" : " off"}`; d.dataset.id = id;
+        d.innerHTML = `<summary>${svg("caret", "caret")}<label class="switch" title="Show on the panel"><input type="checkbox" ${on ? "checked" : ""}><span></span></label><span class="name">${meta.name}<small>${meta.desc}</small></span><span class="order"><button class="btn icon" type="button" data-move="-1" title="Move up" ${!on || i <= 0 ? "disabled" : ""}>${svg("up")}</button><button class="btn icon" type="button" data-move="1" title="Move down" ${!on || i >= cfg.layout.widgets.length - 1 ? "disabled" : ""}>${svg("down")}</button></span></summary><div class="body"></div>`;
+        const body = d.querySelector(".body");
+        if (meta.fields.length) body.appendChild(fields(meta.fields));
+        d.querySelector(".switch").addEventListener("click", (e) => e.stopPropagation());
+        d.querySelector(".switch input").addEventListener("change", (e) => {
+          if (e.target.checked) cfg.layout.widgets.push(id); else cfg.layout.widgets = cfg.layout.widgets.filter((w) => w !== id);
+          dirty(); drawWidgets();
+        });
+        d.querySelectorAll("[data-move]").forEach((b) => b.addEventListener("click", (e) => {
+          e.preventDefault(); e.stopPropagation();
+          const j = i + +b.dataset.move; const w = cfg.layout.widgets;
+          [w[i], w[j]] = [w[j], w[i]]; dirty(); drawWidgets();
+        }));
+        d.querySelector("summary").addEventListener("click", (e) => { if (e.target.closest("button")) e.preventDefault(); });
+        box.appendChild(d);
+      });
+      rerenderVisibility();
+    }
+
+    function render() {
+      drawWidgets();
+      const look = $("look"); look.innerHTML = `<h2>Look</h2><p class="lead">Two accent colors drive the whole page. Take them from your case lighting, or pick them here.</p>`; look.appendChild(fields(LOOK));
+      const screen = $("screen"); screen.innerHTML = `<h2>Screen</h2><p class="lead">Dimming and sampling rate.</p>`; screen.appendChild(fields(SCREEN));
+      refreshPresets(); rerenderVisibility();
+    }
+
+    async function load() {
+      const data = await (await fetch("/api/settings")).json();
+      cfg = data.config; widgetIds = data.widgets;
+      $("path").textContent = data.path; $("path2").textContent = data.path;
+      render(); setStatus("", "");
+    }
+    async function save() {
+      setStatus("Saving…", "");
+      try {
+        const r = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(cfg) });
+        if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+        cfg = (await r.json()).config; render(); setStatus("Saved. The panel updated.", "ok");
+      } catch (e) { setStatus(`Not saved: ${e.message}`, "err"); }
+    }
+    $("save").addEventListener("click", save);
+    $("reload").addEventListener("click", load);
+    document.addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); save(); } });
+    load().catch((e) => setStatus(`Could not load settings: ${e.message}`, "err"));
+  })();
+  </script>
+</body>
+</html>

@@ -19,6 +19,11 @@
     chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
     camera: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
     app: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>',
+    up: '<polyline points="6 15 12 9 18 15"/>',
+    down: '<polyline points="6 9 12 15 18 9"/>',
+    eyeoff: '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>',
+    plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+    sliders: '<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
     sun: '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>',
     cloud: '<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>',
     "cloud-sun": '<path d="M12 2v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M20 12h2"/><path d="M19.07 4.93l-1.41 1.41"/><path d="M15.95 10.6A4 4 0 1 0 8.5 8.5"/><path d="M17 17.5H7a4 4 0 0 1-.5-7.97 6 6 0 0 1 11.3 2.47A3 3 0 0 1 17 17.5z"/>',
@@ -94,8 +99,7 @@
   function mountAutomata(cfg) {
     const card = $("ca-card");
     if (!card || !window.CA) return;
-    if (!cfg || !cfg.enabled) { card.hidden = true; return; }
-    if (ca) return;
+    if (!cfg || !cfg.enabled || ca) return;
     try {
       ca = window.CA.mount($("ca"), {
         rule: cfg.rule, cell: cfg.cell, reactive: cfg.reactive, theme: theme,
@@ -150,6 +154,89 @@
   tickClock();
   setInterval(tickClock, 1000);
 
+  // ---- Layout: which cards show, in what order ------------------------------------------
+  const WIDGET_NAMES = { clock: "Clock", weather: "Weather", cpu: "CPU", gpu: "GPU", memory: "Memory", network: "Network", agents: "AI agents", automata: "Automata", apps: "Apps" };
+  const panel = $("panel");
+  const cards = () => [...panel.querySelectorAll(".card[data-widget]")];
+  let layout = [];
+  function applyLayout(widgets) {
+    layout = widgets.filter((w) => panel.querySelector(`.card[data-widget="${w}"]`));
+    const tray = $("tray-card");
+    layout.forEach((w) => { const el = panel.querySelector(`.card[data-widget="${w}"]`); el.hidden = false; panel.insertBefore(el, tray); });
+    cards().forEach((el) => { if (!layout.includes(el.dataset.widget)) el.hidden = true; });
+    if (ca) ca.setPaused(!layout.includes("automata"));
+    drawTray();
+    refreshEditTools();
+  }
+
+  // ---- Edit mode ------------------------------------------------------------------------------
+  let editing = false;
+  function ensureEditTools() {
+    cards().forEach((el) => {
+      if (el.querySelector(".edit-tools")) return;
+      const t = document.createElement("div");
+      t.className = "edit-tools";
+      t.innerHTML = `<span class="edit-name">${WIDGET_NAMES[el.dataset.widget] || el.dataset.widget}</span><button class="up-btn" title="Move up">${svg("up")}</button><button class="down-btn" title="Move down">${svg("down")}</button><button class="hide-btn" title="Hide">${svg("eyeoff")}</button>`;
+      t.querySelector(".up-btn").addEventListener("click", (e) => { e.stopPropagation(); move(el.dataset.widget, -1); });
+      t.querySelector(".down-btn").addEventListener("click", (e) => { e.stopPropagation(); move(el.dataset.widget, 1); });
+      t.querySelector(".hide-btn").addEventListener("click", (e) => { e.stopPropagation(); hideWidget(el.dataset.widget); });
+      el.insertBefore(t, el.firstChild);
+    });
+  }
+  function refreshEditTools() {
+    cards().forEach((el) => {
+      const i = layout.indexOf(el.dataset.widget), t = el.querySelector(".edit-tools");
+      if (!t) return;
+      t.querySelector(".up-btn").disabled = i <= 0;
+      t.querySelector(".down-btn").disabled = i < 0 || i >= layout.length - 1;
+    });
+  }
+  function move(widget, dir) {
+    const i = layout.indexOf(widget), j = i + dir;
+    if (i < 0 || j < 0 || j >= layout.length) return;
+    [layout[i], layout[j]] = [layout[j], layout[i]];
+    const el = panel.querySelector(`.card[data-widget="${widget}"]`);
+    el.classList.add("moving"); setTimeout(() => el.classList.remove("moving"), 400);
+    applyLayout(layout); saveLayout();
+    el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+  function hideWidget(widget) { applyLayout(layout.filter((w) => w !== widget)); saveLayout(); }
+  function showWidget(widget) { applyLayout([...layout, widget]); saveLayout(); }
+  function drawTray() {
+    const all = (config && config.layout && config.layout.all) || Object.keys(WIDGET_NAMES);
+    const hidden = all.filter((w) => !layout.includes(w) && panel.querySelector(`.card[data-widget="${w}"]`));
+    $("tray").innerHTML = hidden.map((w) => `<button class="tray-chip" data-w="${w}">${svg("plus")}${WIDGET_NAMES[w] || w}</button>`).join("");
+    $("tray").querySelectorAll(".tray-chip").forEach((b) => b.addEventListener("click", () => showWidget(b.dataset.w)));
+  }
+  let saveTimer = null, settingsCache = null;
+  async function saveLayout() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      try {
+        if (!settingsCache) settingsCache = (await (await fetch("/api/settings")).json()).config;
+        settingsCache.layout.widgets = [...layout];
+        const r = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(settingsCache) });
+        if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+        settingsCache = (await r.json()).config;
+        setEditStatus("Saved");
+      } catch (err) { setEditStatus(`Not saved: ${err.message}`); }
+    }, 400);
+  }
+  function setEditStatus(text) { const el = document.querySelector(".edit-status"); if (el) el.textContent = text; }
+  function setEditing(on) {
+    editing = on;
+    document.body.classList.toggle("editing", on);
+    if (on) { ensureEditTools(); settingsCache = null; $("tray-card").hidden = false; refreshEditTools(); if (ca) ca.pause(); }
+    else { $("tray-card").hidden = true; if (ca && layout.includes("automata")) ca.play(); }
+  }
+  $("gear").innerHTML = svg("sliders");
+  $("gear").addEventListener("click", () => setEditing(!editing));
+  const doneBtn = document.createElement("button");
+  doneBtn.className = "edit-done"; doneBtn.innerHTML = 'Done <span class="edit-status"></span>';
+  doneBtn.addEventListener("click", () => setEditing(false));
+  document.body.appendChild(doneBtn);
+  $("settings-url").textContent = `${location.origin}/settings`;
+
   // ---- Config / apps ---------------------------------------------------------------
   let config = null;
   function applyConfig(cfg) {
@@ -167,8 +254,11 @@
       });
     }
     mountAutomata(cfg.automata);
-    if (!cfg.weather.enabled) $("weather-card").hidden = true;
-    if (!cfg.agents.enabled) $("agents-card").hidden = true;
+    let widgets = (cfg.layout && cfg.layout.widgets) || ["clock", "weather", "cpu", "gpu", "memory", "network", "agents", "automata"];
+    if (!cfg.weather.enabled) widgets = widgets.filter((w) => w !== "weather");
+    if (!cfg.agents.enabled) widgets = widgets.filter((w) => w !== "agents");
+    if (!cfg.automata.enabled) widgets = widgets.filter((w) => w !== "automata");
+    applyLayout(widgets);
     setupDim(cfg.display.dim_after_seconds);
   }
 

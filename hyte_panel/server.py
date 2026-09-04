@@ -20,7 +20,7 @@ from .collectors.gpu import GpuCollector
 from .collectors.system import SystemCollector
 from .collectors.theme import ThemeCollector
 from .collectors.weather import WeatherCollector
-from .config import Config, load_config
+from .config import WIDGET_IDS, Config, config_to_dict, load_config, parse_config, save_config
 from .launcher import launch
 
 log = logging.getLogger("hyte_panel")
@@ -32,18 +32,29 @@ class PanelState:
 
     def __init__(self, cfg: Config) -> None:
         self.cfg = cfg
-        self.system = SystemCollector(cfg.hardware.disks, cfg.hardware.network_interface)
-        self.gpu = GpuCollector(cfg.hardware.gpu)
-        self.weather = WeatherCollector(cfg.weather)
-        self.agents = AgentRegistry(
-            cfg.agents.process_patterns, cfg.agents.scan_processes, cfg.agents.stale_seconds
-        )
-        self.theme = ThemeCollector(cfg.theme)
+        self._build_collectors(cfg)
         self.snapshot: dict[str, Any] = {}
         self.clients: set[WebSocket] = set()
         self._task: asyncio.Task | None = None
         self._http: httpx.AsyncClient | None = None
         self._tick = 0
+
+    def _build_collectors(self, cfg: Config) -> None:
+        self.system = SystemCollector(cfg.hardware.disks, cfg.hardware.network_interface)
+        self.gpu = GpuCollector(cfg.hardware.gpu and cfg.shows("gpu"))
+        self.weather = WeatherCollector(cfg.weather)
+        self.agents = AgentRegistry(
+            cfg.agents.process_patterns, cfg.agents.scan_processes, cfg.agents.stale_seconds
+        )
+        self.theme = ThemeCollector(cfg.theme)
+
+    async def apply(self, cfg: Config) -> None:
+        """Swap in a new config, rebuild collectors, tell every page."""
+        old_agents = self.agents
+        self.cfg = cfg
+        self._build_collectors(cfg)
+        self.agents.adopt(old_agents)  # keep hook-reported agents across a settings save
+        await self.broadcast({"type": "config", "data": self.public_config()})
 
     def public_config(self) -> dict[str, Any]:
         return {
@@ -55,10 +66,11 @@ class PanelState:
                 "height": self.cfg.display.height,
                 "dim_after_seconds": self.cfg.display.dim_after_seconds,
             },
-            "weather": {"enabled": self.cfg.weather.enabled, "label": self.cfg.weather.label, "units": self.cfg.weather.units},
-            "agents": {"enabled": self.cfg.agents.enabled},
+            "layout": {"widgets": list(self.cfg.layout.widgets), "all": list(WIDGET_IDS)},
+            "weather": {"enabled": self.cfg.weather.enabled and self.cfg.shows("weather"), "label": self.cfg.weather.label, "units": self.cfg.weather.units},
+            "agents": {"enabled": self.cfg.agents.enabled and self.cfg.shows("agents")},
             "automata": {
-                "enabled": self.cfg.automata.enabled,
+                "enabled": self.cfg.automata.enabled and self.cfg.shows("automata"),
                 "rule": self.cfg.automata.rule,
                 "cell": self.cfg.automata.cell,
                 "attract_idle_seconds": self.cfg.automata.attract_idle_seconds,
@@ -71,8 +83,8 @@ class PanelState:
     def collect(self) -> dict[str, Any]:
         snap = self.system.snapshot()
         snap["gpus"] = self.gpu.snapshot()
-        snap["agents"] = self.agents.snapshot() if self.cfg.agents.enabled else []
-        snap["weather"] = self.weather.data
+        snap["agents"] = self.agents.snapshot() if (self.cfg.agents.enabled and self.cfg.shows("agents")) else []
+        snap["weather"] = self.weather.data if self.cfg.shows("weather") else None
         snap["theme"] = self.theme.snapshot()
         snap["time"] = time.time()
         self.snapshot = snap
@@ -92,7 +104,7 @@ class PanelState:
         self._http = httpx.AsyncClient(timeout=10)
         try:
             while True:
-                if self.weather.due:
+                if self.weather.due and self.cfg.shows("weather"):
                     await self.weather.refresh(self._http)
                 try:
                     snap = await asyncio.to_thread(self.collect)
@@ -158,11 +170,72 @@ def create_app(cfg: Config | None = None, *, background: bool = True) -> FastAPI
     async def api_theme() -> dict[str, Any]:
         return state.theme.snapshot()
 
+    @app.get("/settings")
+    async def settings_page() -> FileResponse:
+        return FileResponse(STATIC_DIR / "settings.html")
+
+    @app.get("/api/settings")
+    async def api_settings() -> dict[str, Any]:
+        return {"config": config_to_dict(state.cfg), "path": state.cfg.path, "widgets": list(WIDGET_IDS)}
+
+    def _same_origin(request: Request) -> bool:
+        # The page can only be served from this host, so any Origin must match it.
+        origin = request.headers.get("origin")
+        if not origin:
+            return True
+        host = request.headers.get("host", "")
+        return origin.split("://", 1)[-1] == host
+
+    @app.put("/api/settings")
+    async def api_settings_save(request: Request) -> dict[str, Any]:
+        if not _same_origin(request):
+            raise HTTPException(status_code=403, detail="cross-origin request refused")
+        try:
+            raw = await request.json()
+        except Exception:
+            raise HTTPException(status_code=400, detail="expected JSON") from None
+        if not isinstance(raw, dict):
+            raise HTTPException(status_code=400, detail="expected a JSON object")
+        # Server and display settings need a restart; keep the running values.
+        new_cfg = parse_config(raw, source=state.cfg.source)
+        new_cfg.server = state.cfg.server
+        new_cfg.display.width, new_cfg.display.height = state.cfg.display.width, state.cfg.display.height
+        new_cfg.display.connector, new_cfg.display.backend, new_cfg.display.chromium = (
+            state.cfg.display.connector, state.cfg.display.backend, state.cfg.display.chromium)
+        new_cfg.path = state.cfg.path
+        try:
+            path = await asyncio.to_thread(save_config, new_cfg)
+        except OSError as exc:
+            raise HTTPException(status_code=500, detail=f"could not write config: {exc}") from exc
+        await state.apply(new_cfg)
+        return {"ok": True, "path": str(path), "config": config_to_dict(new_cfg)}
+
+    @app.get("/api/geocode")
+    async def api_geocode(q: str) -> dict[str, Any]:
+        """Place search for the weather settings (Open-Meteo, no key)."""
+        q = q.strip()
+        if len(q) < 2:
+            return {"results": []}
+        client = state._http or httpx.AsyncClient(timeout=10)
+        try:
+            r = await client.get("https://geocoding-api.open-meteo.com/v1/search", params={"name": q, "count": 8, "language": "en", "format": "json"})
+            r.raise_for_status()
+            data = r.json()
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"geocoding failed: {exc}") from exc
+        finally:
+            if client is not state._http:
+                await client.aclose()
+        return {"results": [
+            {"name": x.get("name"), "region": x.get("admin1", ""), "country": x.get("country", ""),
+             "latitude": x.get("latitude"), "longitude": x.get("longitude")}
+            for x in data.get("results", []) or []]}
+
     @app.post("/api/launch/{index}")
     async def api_launch(index: int) -> dict[str, Any]:
-        if index < 0 or index >= len(cfg.apps):
+        if index < 0 or index >= len(state.cfg.apps):
             raise HTTPException(status_code=404, detail="unknown app")
-        app_btn = cfg.apps[index]
+        app_btn = state.cfg.apps[index]
         try:
             ran = await asyncio.to_thread(launch, app_btn)
         except Exception as exc:

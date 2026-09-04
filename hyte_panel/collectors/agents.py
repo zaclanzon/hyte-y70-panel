@@ -89,6 +89,10 @@ class AgentRegistry:
         self._hook_agents: dict[str, AgentState] = {}
         self._own_pid = os.getpid()
 
+    def adopt(self, other: "AgentRegistry") -> None:
+        """Take over another registry's hook-reported agents (after a settings reload)."""
+        self._hook_agents.update(other._hook_agents)
+
     # ---- hook / status sources -------------------------------------------------
 
     def apply_hook(self, payload: dict[str, Any]) -> AgentState:
