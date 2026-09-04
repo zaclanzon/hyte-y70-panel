@@ -44,19 +44,9 @@ shows the command and how to check the result.
 
 ### 1. Get the code
 
-The panel lives in the `repos/hyte-y70-panel` folder of the `scratch` repo.
-
 ```bash
-git clone https://github.com/zaclanzon/scratch.git ~/src/scratch
-cd ~/src/scratch/repos/hyte-y70-panel
-```
-
-Optional: split the folder into its own repository with history.
-
-```bash
-cd ~/src/scratch
-git subtree split --prefix=repos/hyte-y70-panel -b hyte-y70-panel
-gh repo create hyte-y70-panel --private --source=. --push   # or push the branch by hand
+git clone https://github.com/zaclanzon/hyte-y70-panel.git ~/src/hyte-y70-panel
+cd ~/src/hyte-y70-panel
 ```
 
 ### 2. Check the display and the driver
@@ -154,8 +144,8 @@ Set Settings > Power > Screen Blank to "Never", or set
 ### Update later
 
 ```bash
-cd ~/src/scratch && git pull
-~/.local/share/hyte-panel/venv/bin/pip install --quiet "./repos/hyte-y70-panel[nvidia]"
+cd ~/src/hyte-y70-panel && git pull
+~/.local/share/hyte-panel/venv/bin/pip install --quiet ".[nvidia]"
 systemctl --user restart hyte-panel
 ```
 
