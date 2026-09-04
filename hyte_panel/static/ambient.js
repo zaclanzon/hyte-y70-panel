@@ -25,8 +25,8 @@
   const BLOBS = 10;            // seed spots, dealt alternately to the two colors
   const OVEREXTENDED = 0.55;   // base share past which a color weakens (scaled by weight)
   const DEATH = 0.012;         // share below which a color dies
-  const ROT_P = 0.05;          // per-tick chance an interior cell rots to the page color
-  const REPEL_P = 0.14;        // per-tick chance a live cell next to a fresh void joins it
+  const ROT_P = 0.025;         // per-tick chance an interior cell rots to the page color
+  const REPEL_P = 0.07;        // per-tick chance a live cell next to a fresh void joins it
   const VOID_TICKS = 6;        // how long a void repels before it can be grown over
   const RANK_WEIGHTS = [1.35, 0.7]; // dominant, weakest
   const RESPAWN_TICKS = 40;
@@ -183,7 +183,7 @@
           if (t > bestT) { bestT = t; best = c; }
         }
         if (best < 0) continue;
-        const defense = cur === PAGE ? 1.1 + 2.5 * (hollow[i] / VOID_TICKS) : tally[cur] * weight[cur] * (share(cur) > cap(cur) ? 0.5 : 1) + 1.6;
+        const defense = cur === PAGE ? 1.1 + 1.25 * (hollow[i] / VOID_TICKS) : tally[cur] * weight[cur] * (share(cur) > cap(cur) ? 0.5 : 1) + 1.6;
         if (bestT > defense && Math.random() < 0.6) next[i] = best;
       }
     owner = next;
