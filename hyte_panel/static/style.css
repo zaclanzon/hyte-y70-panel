@@ -47,15 +47,9 @@ body {
 }
 canvas { display: block; }
 
-/* Ambient light behind the glass (ambient.js): a two-color automaton on a
-   coarse canvas, upscaled and blurred into ragged washes. Screen blending
-   over the page gradient leaves the page color tracing through. */
+/* The opaque liquid surface is shaded on a small GPU canvas in ambient.js. */
 .ambient-glow { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
-.ambient-glow canvas {
-  width: 100%; height: 100%;
-  filter: blur(18px); opacity: .75; mix-blend-mode: screen;
-  transform: scale(1.06); /* hide the blur's transparent fringe */
-}
+.ambient-glow canvas { width: 100%; height: 100%; }
 
 /* The panel is exactly one screen tall and never scrolls: the automata card takes the remaining height. */
 .panel { display: flex; flex-direction: column; gap: var(--gap); padding: var(--pad); max-width: 100%; height: 100vh; overflow: hidden; position: relative; }
@@ -64,7 +58,9 @@ canvas { display: block; }
 /* Glass card */
 .card {
   position: relative;
+  /* A dark translucent base keeps widget text readable over the moving light. */
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.035) 60%, rgba(255, 255, 255, 0.05));
+  background-color: rgba(10, 12, 22, 0.48);
   border: 1px solid var(--edge);
   border-radius: var(--radius);
   padding: var(--pad);
