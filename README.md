@@ -143,7 +143,7 @@ hyte_panel/
   desktop.py     control window, settings window, desktop entry, service / autostart
   data/          example config, .desktop file, icon, systemd unit
   collectors/    system, gpu, weather, agents, theme
-  static/        index.html, style.css, app.js, settings.html, ca/
+  static/        index.html, style.css, app.js, ambient.js, settings.html, ca/
 scripts/         install.sh, map-touch.sh
 docs/            install checklist, HYTE screen notes
 ```

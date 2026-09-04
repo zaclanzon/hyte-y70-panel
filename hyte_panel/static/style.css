@@ -37,35 +37,25 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; min-height: 100%; color: var(--text); overflow-x: hidden; }
+/* The page color lives on <html>. Body stays transparent so the negative-z
+   .ambient-glow paints between the root background and the content; a body
+   background would sit above it and hide the field. */
+html { background: linear-gradient(180deg, var(--bg-1), var(--bg-0)) fixed; }
 body {
   font-size: 22px; line-height: 1.3; user-select: none; -webkit-user-select: none; touch-action: pan-y;
-  background: radial-gradient(120% 60% at 50% -10%, color-mix(in srgb, var(--accent-3) 16%, var(--bg-1)) 0%, var(--bg-1) 45%, var(--bg-0) 100%) fixed;
+  background: transparent;
 }
 canvas { display: block; }
 
-/* Ambient color blobs behind the glass */
-body::before, body::after, .panel::before {
-  content: ""; position: fixed; z-index: -1; border-radius: 50%; pointer-events: none;
-  filter: blur(90px); opacity: .75; will-change: transform;
+/* Ambient light behind the glass (ambient.js): a two-color automaton on a
+   coarse canvas, upscaled and blurred into ragged washes. Screen blending
+   over the page gradient leaves the page color tracing through. */
+.ambient-glow { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+.ambient-glow canvas {
+  width: 100%; height: 100%;
+  filter: blur(18px); opacity: .75; mix-blend-mode: screen;
+  transform: scale(1.06); /* hide the blur's transparent fringe */
 }
-body::before {
-  width: 640px; height: 640px; left: -220px; top: 120px;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 55%, transparent), transparent 70%);
-  animation: drift-a 38s ease-in-out infinite alternate;
-}
-body::after {
-  width: 720px; height: 720px; right: -300px; top: 42%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent-2) 55%, transparent), transparent 70%);
-  animation: drift-b 46s ease-in-out infinite alternate;
-}
-.panel::before {
-  width: 560px; height: 560px; left: 10%; bottom: -200px;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent-3) 45%, transparent), transparent 70%);
-  animation: drift-c 52s ease-in-out infinite alternate;
-}
-@keyframes drift-a { to { transform: translate(140px, 260px) scale(1.15); } }
-@keyframes drift-b { to { transform: translate(-180px, -320px) scale(1.1); } }
-@keyframes drift-c { to { transform: translate(160px, -220px) scale(1.2); } }
 
 /* The panel is exactly one screen tall and never scrolls: the automata card takes the remaining height. */
 .panel { display: flex; flex-direction: column; gap: var(--gap); padding: var(--pad); max-width: 100%; height: 100vh; overflow: hidden; position: relative; }
@@ -277,5 +267,5 @@ body::after {
   .apps-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) {
-  body::before, body::after, .panel::before, .agent .light { animation: none; }
+  .agent .light { animation: none; } /* ambient.js also freezes its field */
 }

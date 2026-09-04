@@ -92,6 +92,7 @@
       if (el.tagName === "circle") el.style.stroke = c; else el.style.background = c;
     });
     if (ca) ca.setTheme(theme);
+    if (window.HyteAmbient) window.HyteAmbient.setPalette(theme.primary, theme.secondary);
   }
 
   // ---- Cellular automata card (static/ca, mounted from the config) -----------------
