@@ -162,7 +162,7 @@
     ];
 
     // ---- state ---------------------------------------------------------------------------
-    let cfg = null, widgetIds = [];
+    let cfg = null, widgetIds = [], liveTheme = null;
     const get = (path) => path.split(".").reduce((o, k) => (o == null ? o : o[k]), cfg);
     const set = (path, v) => { const ks = path.split("."), last = ks.pop(); ks.reduce((o, k) => o[k], cfg)[last] = v; };
     const rgbToHex = (rgb) => "#" + (rgb || [0, 0, 0]).map((v) => Math.max(0, Math.min(255, +v | 0)).toString(16).padStart(2, "0")).join("");
@@ -188,7 +188,7 @@
         const opts = (typeof f.options === "function" ? f.options() : f.options).map((o) => (Array.isArray(o) ? o : [o, o]));
         wrap.innerHTML = `<label for="${id}">${f.label}</label><select id="${id}">${opts.map(([val, name]) => `<option value="${val}">${name}</option>`).join("")}</select>`;
         input = wrap.querySelector("select"); input.value = String(v);
-        input.addEventListener("change", () => { set(f.path, input.value); dirty(); rerenderVisibility(); });
+        input.addEventListener("change", () => { set(f.path, input.value); dirty(); rerenderVisibility(); if (f.path === "theme.source") themeNote(); });
       } else if (f.type === "list" || f.type === "pair") {
         wrap.innerHTML = `<label for="${id}">${f.label}</label><textarea id="${id}" ${f.type === "pair" ? 'rows="2"' : ""}></textarea>`;
         input = wrap.querySelector("textarea"); input.value = (v || []).join("\n");
@@ -196,7 +196,7 @@
       } else if (f.type === "color") {
         wrap.innerHTML = `<label for="${id}">${f.label}</label><div class="row"><input type="color" id="${id}"><span class="hex"></span></div>`;
         input = wrap.querySelector("input"); input.value = rgbToHex(v); wrap.querySelector(".hex").textContent = input.value;
-        input.addEventListener("input", () => { set(f.path, hexToRgb(input.value)); wrap.querySelector(".hex").textContent = input.value; set("theme.preset", ""); dirty(); refreshPresets(); });
+        input.addEventListener("input", () => { set(f.path, hexToRgb(input.value)); wrap.querySelector(".hex").textContent = input.value; set("theme.preset", ""); useStatic(); dirty(); refreshPresets(); });
       } else if (f.type === "geo") {
         wrap.innerHTML = `<label for="${id}">${f.label}</label><div class="geo"><div class="row"><input type="text" id="${id}" placeholder="City or town" style="flex:1"><button class="btn icon" type="button" title="Search">${svg("search")}</button></div><div class="geo-results hidden"></div></div>`;
         input = wrap.querySelector("input"); input.value = v || "";
@@ -234,7 +234,7 @@
 
     function presets() {
       const wrap = document.createElement("div"); wrap.className = "field wide";
-      wrap.innerHTML = `<label>Presets</label><div class="presets"></div><div class="preview"></div>`;
+      wrap.innerHTML = `<label>Presets</label><div class="presets"></div><div class="preview"></div><div class="help" id="theme-note"></div>`;
       const box = wrap.querySelector(".presets");
       Object.entries(PRESETS).forEach(([name, [a, b]]) => {
         const btn = document.createElement("button"); btn.type = "button"; btn.className = "preset"; btn.dataset.name = name;
@@ -243,13 +243,30 @@
           set("theme.preset", name); set("theme.primary", hexToRgb(a)); set("theme.secondary", hexToRgb(b));
           $("f-theme-primary").value = a; $("f-theme-secondary").value = b;
           $("f-theme-primary").parentElement.querySelector(".hex").textContent = a; $("f-theme-secondary").parentElement.querySelector(".hex").textContent = b;
-          dirty(); refreshPresets();
+          useStatic(); dirty(); refreshPresets();
         });
         box.appendChild(btn);
       });
       return wrap;
     }
+    // With any other source the lighting wins whenever it is reachable, so a
+    // preset or color picked here would only be the fallback. Switch to static
+    // so the choice is what the panel shows.
+    function useStatic() {
+      if (cfg.theme.source === "static") return;
+      set("theme.source", "static");
+      const sel = $("f-theme-source"); if (sel) sel.value = "static";
+      rerenderVisibility();
+    }
+    function themeNote() {
+      const note = $("theme-note"); if (!note) return;
+      const live = liveTheme && liveTheme.source;
+      if (cfg.theme.source === "static") note.textContent = "The panel uses the colors below.";
+      else if (live && live !== "static") note.textContent = `Your lighting (${live}) sets the colors now, so the colors below are only the fallback. Pick a preset or a color to use them instead.`;
+      else note.textContent = "No lighting source is reachable, so the panel uses the colors below. Pick a preset or a color to keep them.";
+    }
     function refreshPresets() {
+      themeNote();
       document.querySelectorAll(".preset").forEach((b) => b.classList.toggle("on", b.dataset.name === (cfg.theme.preset || "").toLowerCase()));
       const pv = document.querySelector(".preview");
       if (pv) { pv.style.setProperty("--p-primary", rgbToHex(cfg.theme.primary)); pv.style.setProperty("--p-secondary", rgbToHex(cfg.theme.secondary)); pv.style.setProperty("--p-blend", rgbToHex(cfg.theme.primary.map((v, i) => Math.round((v * 3 + cfg.theme.secondary[i]) / 4)))); }
@@ -306,9 +323,14 @@
       refreshPresets(); rerenderVisibility();
     }
 
+    async function fetchLiveTheme() {
+      try { liveTheme = await (await fetch("/api/theme")).json(); } catch (e) { liveTheme = null; }
+      themeNote();
+    }
     async function load() {
       const data = await (await fetch("/api/settings")).json();
       cfg = data.config; widgetIds = data.widgets;
+      fetchLiveTheme();
       $("path").textContent = data.path; $("path2").textContent = data.path;
       render(); setStatus("", "");
     }
@@ -318,6 +340,7 @@
         const r = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(cfg) });
         if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
         cfg = (await r.json()).config; render(); setStatus("Saved. The panel updated.", "ok");
+        fetchLiveTheme();
       } catch (e) { setStatus(`Not saved: ${e.message}`, "err"); }
     }
     $("save").addEventListener("click", save);
