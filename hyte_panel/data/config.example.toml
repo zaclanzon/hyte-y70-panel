@@ -51,6 +51,9 @@ file_keys = ["primary", "secondary"]
 preset = ""
 primary = [255, 0, 0]
 secondary = [0, 0, 255]
+# The animated ground behind the cards: liquid, ribbons, bokeh, caustics, ink,
+# satin, coral, lava, shafts, contours or hex. Previews on the settings page.
+background = "liquid"
 
 [layout]
 # Cards to show, top to bottom. Leave one out to hide it. Also editable from the
@@ -65,6 +68,9 @@ cell = 2                    # device pixels per cell
 attract_idle_seconds = 45   # rotate rules after this idle time; 0 = never
 attract_rotate_seconds = 120
 reactive = true             # CPU load, network traffic and agent activity feed the world
+primary = "#ffe28a"         # long-lived cells; pick all three on the settings page wheel
+secondary = "#7dffc5"       # newborn cells
+blend = "#f4f7ff"           # dying cells and trails
 
 # App buttons. Use "desktop_id" for installed apps (gtk-launch), or "command".
 # Add "apps" to layout.widgets to show the card.

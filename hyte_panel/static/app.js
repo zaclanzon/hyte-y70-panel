@@ -95,21 +95,25 @@
   }
 
   // ---- Cellular automata card (static/ca, mounted from the config) -----------------
-  // Bright mint cells, warm gold survivors, and pearl trails stay legible
-  // independently of the case lighting and the liquid background.
-  const caTheme = { primary: "#ffe28a", secondary: "#7dffc5", blend: "#f4f7ff" };
+  // The cells get their own three colors, chosen on the settings page wheel, so they
+  // stay legible independently of the case lighting and the liquid background.
+  const CA_THEME = { primary: "#ffe28a", secondary: "#7dffc5", blend: "#f4f7ff" };
   let ca = null;
+  function applyAutomataTheme(el, colors) {
+    const t = Object.assign({}, CA_THEME, colors || {});
+    el.style.setProperty("--ca-accent", t.primary);
+    el.style.setProperty("--ca-accent-2", t.secondary);
+    el.style.setProperty("--ca-accent-3", t.blend);
+    return t;
+  }
   function mountAutomata(cfg) {
     const card = $("ca-card");
-    if (!card || !window.CA) return;
-    if (!cfg || !cfg.enabled || ca) return;
+    if (!card || !window.CA || !cfg || !cfg.enabled) return;
+    const el = $("ca");
+    if (ca) { ca.setTheme(applyAutomataTheme(el, cfg.colors)); return; }
     try {
-      const el = $("ca");
-      el.style.setProperty("--ca-accent", caTheme.primary);
-      el.style.setProperty("--ca-accent-2", caTheme.secondary);
-      el.style.setProperty("--ca-accent-3", caTheme.blend);
       ca = window.CA.mount(el, {
-        rule: cfg.rule, cell: cfg.cell, reactive: cfg.reactive, theme: caTheme,
+        rule: cfg.rule, cell: cfg.cell, reactive: cfg.reactive, theme: applyAutomataTheme(el, cfg.colors),
         attract: cfg.attract_idle_seconds > 0 ? { idle: cfg.attract_idle_seconds, rotate: cfg.attract_rotate_seconds } : false,
       });
     } catch (err) {
@@ -261,6 +265,7 @@
       });
     }
     mountAutomata(cfg.automata);
+    if (window.HyteAmbient) window.HyteAmbient.setDesign(cfg.background);
     let widgets = (cfg.layout && cfg.layout.widgets) || ["clock", "weather", "cpu", "gpu", "memory", "network", "agents", "automata"];
     if (!cfg.weather.enabled) widgets = widgets.filter((w) => w !== "weather");
     if (!cfg.agents.enabled) widgets = widgets.filter((w) => w !== "agents");

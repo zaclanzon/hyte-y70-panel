@@ -78,3 +78,4 @@ Screen Blank to "Never" if you want the panel visible at all times. Use the
 | No GPU data | Run `nvidia-smi`. If it works, the panel works. Install the `nvidia` extra for NVML support. |
 | No CPU temperature | Run `sudo sensors-detect` once, then reboot. |
 | Touch moves the pointer on the main screen | Run `scripts/map-touch.sh`. |
+| Journal floods with `vkAcquireNextImageKHR ... VK_ERROR_OUT_OF_DATE_KHR` and the `hyte-panel` process sits at 20% CPU | GTK's Vulkan renderer recreates its swapchain every frame on the rotated output. Add a drop-in with `Environment=GSK_RENDERER=gl` under `~/.config/systemd/user/hyte-panel.service.d/`, then `systemctl --user daemon-reload` and restart the service. |

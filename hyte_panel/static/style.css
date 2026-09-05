@@ -135,7 +135,7 @@ canvas { display: block; }
 .spark { width: 100%; height: 50px; margin-top: 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.035); border: 1px solid rgba(255, 255, 255, 0.06); }
 .cores { display: grid; grid-template-columns: repeat(16, 1fr); gap: 4px; margin-top: 14px; }
 .core { height: 9px; border-radius: 4px; overflow: hidden; }
-.core i { display: block; height: 100%; background: var(--usage-ramp, linear-gradient(90deg, var(--accent-2) 50%, var(--usage-mid) 50% 75%, var(--accent) 75%)); transition: width .4s; }
+.core i { display: block; height: 100%; background: var(--usage-ramp, linear-gradient(90deg, var(--accent-2) 50%, var(--usage-mid) 50% 75%, var(--accent) 75%)); } /* no transition: 32 bars easing every second repainted the card at 60 fps */
 
 .bar-row { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
 .bar-label { color: var(--muted); width: 90px; font-size: 17px; text-transform: uppercase; letter-spacing: 1.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

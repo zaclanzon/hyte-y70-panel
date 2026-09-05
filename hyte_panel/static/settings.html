@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>HYTE Panel settings</title>
+  <link rel="stylesheet" href="/static/ca/ca.css">
   <style>
     :root {
       --bg-0: #07060f; --bg-1: #120a22; --glass: rgba(255,255,255,.055); --glass-strong: rgba(255,255,255,.14);
@@ -67,6 +68,39 @@
     .swatch { display: flex; border-radius: 8px; overflow: hidden; width: 44px; height: 26px; }
     .swatch i { flex: 1; }
     .preview { height: 12px; border-radius: 6px; margin-top: 12px; background: linear-gradient(90deg, var(--p-primary, #f00), var(--p-blend, #f0f), var(--p-secondary, #00f)); }
+    /* background picker: live tiles from ambient.js with a scrap of card glass on each */
+    .backgrounds { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 10px; }
+    .bg { border: 1px solid var(--edge); border-radius: 14px; padding: 6px 6px 8px; background: var(--glass); cursor: pointer; display: grid; gap: 7px; text-align: left; transition: border-color .15s; }
+    .bg:hover { border-color: var(--edge-hi); }
+    .bg.on { border-color: var(--accent-2); box-shadow: 0 0 16px color-mix(in srgb, var(--accent-2) 30%, transparent); }
+    .bg-tile { display: block; position: relative; aspect-ratio: 3 / 4; border-radius: 9px; overflow: hidden; background: linear-gradient(155deg, var(--accent), var(--accent-2) 48%, var(--accent)); }
+    .bg-tile canvas { display: block; width: 100%; height: 100%; }
+    .bg-tile::after { content: ""; position: absolute; left: 10%; right: 10%; top: 12%; height: 34%; border-radius: 7px; background: rgba(10,12,22,.48); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(6px) saturate(170%); -webkit-backdrop-filter: blur(6px) saturate(170%); }
+    .bg-name { font-size: 13px; padding: 0 2px; }
+    /* automata color wheel */
+    .wheel-box { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 22px; align-items: start; }
+    .wheel { position: relative; width: 220px; height: 220px; border-radius: 50%; touch-action: none; cursor: crosshair; box-shadow: 0 10px 30px rgba(0,0,0,.45), inset 0 0 0 1px var(--edge-hi);
+      background: radial-gradient(circle closest-side, hsl(0 0% 50%) 0%, transparent 100%), conic-gradient(hsl(0 100% 50%), hsl(60 100% 50%), hsl(120 100% 50%), hsl(180 100% 50%), hsl(240 100% 50%), hsl(300 100% 50%), hsl(360 100% 50%)); }
+    .wheel .handle { position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: rgba(0,0,0,.7); cursor: grab; transition: transform .12s; }
+    .wheel .handle.on { transform: scale(1.25); z-index: 1; box-shadow: 0 0 0 3px rgba(255,255,255,.35), 0 2px 10px rgba(0,0,0,.6); }
+    .wheel-side { display: grid; gap: 10px; min-width: 0; }
+    .swatch-row { display: grid; grid-template-columns: 28px minmax(0, 1fr) 110px 70px; gap: 10px; align-items: center; padding: 6px 10px; border-radius: 12px; border: 1px solid transparent; cursor: pointer; }
+    .swatch-row:hover { background: var(--glass); }
+    .swatch-row.on { border-color: var(--edge-hi); background: var(--glass); }
+    .swatch-row .dot { width: 26px; height: 26px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); }
+    .swatch-row .who { font-size: 14px; }
+    .swatch-row .who small { display: block; color: var(--muted); font-size: 12px; }
+    .swatch-row code { font-size: 12.5px; color: var(--muted); text-align: right; }
+    .swatch-row input[type=range] { width: 100%; accent-color: #fff; }
+    .ca-preview { height: 150px; border-radius: 16px; overflow: hidden; }
+    .ca-preview .ca-btn, .ca-preview .ca-pill { min-height: 36px; border-radius: 10px; padding: 2px 8px; }
+    .ca-preview .ca-btn svg, .ca-preview .ca-pill svg { width: 16px; height: 16px; }
+    .ca-preview .ca-rule b { font-size: 13px; } .ca-preview .ca-rule small, .ca-preview .ca-speed b { font-size: 11px; }
+    .ca-preview .ca-stage { min-height: 90px; }
+    .ca-preview .ca-toast { padding: 8px 14px; } .ca-preview .ca-toast b { font-size: 16px; } .ca-preview .ca-toast small { font-size: 11px; }
+    .ca-preview .ca-picker-list button { min-height: 0; padding: 6px 8px; } .ca-preview .ca-picker-list b { font-size: 13px; } .ca-preview .ca-picker-list small, .ca-preview .ca-picker-list span { font-size: 11px; }
+    .ca-preview .ca-menu button { min-height: 0; padding: 6px 10px; font-size: 13px; }
+    @media (max-width: 640px) { .wheel-box { grid-template-columns: 1fr; justify-items: center; } .wheel-side { width: 100%; } }
     /* apps table */
     .apps { display: grid; grid-template-columns: 1.2fr 130px 1.4fr 1.6fr 38px; gap: 8px; align-items: center; }
     .apps .head { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1.2px; }
@@ -99,6 +133,8 @@
     <p class="footer-note">Saving writes <code id="path2"></code> and updates the panel immediately. Server address, port and screen size are set in that file by hand and need a restart.</p>
   </main>
   <script src="/static/ca/core.js"></script>
+  <script src="/static/ca/ca.js"></script>
+  <script src="/static/ambient.js"></script>
   <script>
   (function () {
     "use strict";
@@ -143,6 +179,7 @@
         { path: "automata.attract_idle_seconds", label: "Rotate rules after idle (s)", type: "number", min: 0, help: "0 keeps whatever you picked." },
         { path: "automata.attract_rotate_seconds", label: "Seconds per rule", type: "number", min: 10 },
         { path: "automata.reactive", label: "React to CPU, network and agents", type: "bool" },
+        { type: "cawheel", wide: true },
       ] },
       apps: { name: "App buttons", desc: "Large touch buttons that start programs.", fields: [{ type: "apps", wide: true }] },
     };
@@ -155,6 +192,7 @@
       { path: "theme.openrgb_port", label: "OpenRGB port", type: "number", show: (c) => ["auto", "openrgb"].includes(c.theme.source) },
       { path: "theme.file", label: "JSON file", type: "text", help: "Path to a file your lighting tool keeps updated.", show: (c) => ["auto", "file"].includes(c.theme.source) },
       { path: "theme.file_keys", label: "Keys with RGB values", type: "pair", help: "Two key names, for example base_color and stripe_color.", show: (c) => ["auto", "file"].includes(c.theme.source) },
+      { type: "background", wide: true },
     ];
     const SCREEN = [
       { path: "display.dim_after_seconds", label: "Dim the panel after (s)", type: "number", min: 0, help: "0 never dims. A touch wakes it." },
@@ -162,7 +200,7 @@
     ];
 
     // ---- state ---------------------------------------------------------------------------
-    let cfg = null, widgetIds = [];
+    let cfg = null, widgetIds = [], liveTheme = null;
     const get = (path) => path.split(".").reduce((o, k) => (o == null ? o : o[k]), cfg);
     const set = (path, v) => { const ks = path.split("."), last = ks.pop(); ks.reduce((o, k) => o[k], cfg)[last] = v; };
     const rgbToHex = (rgb) => "#" + (rgb || [0, 0, 0]).map((v) => Math.max(0, Math.min(255, +v | 0)).toString(16).padStart(2, "0")).join("");
@@ -174,6 +212,8 @@
     function field(f) {
       if (f.type === "apps") return appsEditor();
       if (f.type === "presets") return presets();
+      if (f.type === "cawheel") return colorWheel();
+      if (f.type === "background") return backgroundPicker();
       const wrap = document.createElement("div");
       wrap.className = `field${f.wide ? " wide" : ""}`;
       if (f.show) wrap.dataset.show = "1";
@@ -188,7 +228,7 @@
         const opts = (typeof f.options === "function" ? f.options() : f.options).map((o) => (Array.isArray(o) ? o : [o, o]));
         wrap.innerHTML = `<label for="${id}">${f.label}</label><select id="${id}">${opts.map(([val, name]) => `<option value="${val}">${name}</option>`).join("")}</select>`;
         input = wrap.querySelector("select"); input.value = String(v);
-        input.addEventListener("change", () => { set(f.path, input.value); dirty(); rerenderVisibility(); });
+        input.addEventListener("change", () => { set(f.path, input.value); dirty(); rerenderVisibility(); if (f.path === "theme.source") refreshBackgrounds(); });
       } else if (f.type === "list" || f.type === "pair") {
         wrap.innerHTML = `<label for="${id}">${f.label}</label><textarea id="${id}" ${f.type === "pair" ? 'rows="2"' : ""}></textarea>`;
         input = wrap.querySelector("textarea"); input.value = (v || []).join("\n");
@@ -253,7 +293,116 @@
       document.querySelectorAll(".preset").forEach((b) => b.classList.toggle("on", b.dataset.name === (cfg.theme.preset || "").toLowerCase()));
       const pv = document.querySelector(".preview");
       if (pv) { pv.style.setProperty("--p-primary", rgbToHex(cfg.theme.primary)); pv.style.setProperty("--p-secondary", rgbToHex(cfg.theme.secondary)); pv.style.setProperty("--p-blend", rgbToHex(cfg.theme.primary.map((v, i) => Math.round((v * 3 + cfg.theme.secondary[i]) / 4)))); }
+      refreshBackgrounds();
     }
+
+    // ---- background picker ---------------------------------------------------------------
+    // Live tiles from ambient.js in the colors the panel is showing right now:
+    // the lighting's colors unless the source is static, then the picked ones.
+    let bgPreviews = [];
+    function previewColors() {
+      if (cfg.theme.source !== "static" && liveTheme) return [liveTheme.primary, liveTheme.secondary];
+      return [rgbToHex(cfg.theme.primary), rgbToHex(cfg.theme.secondary)];
+    }
+    function backgroundPicker() {
+      bgPreviews.forEach((p) => p.destroy()); bgPreviews = [];
+      const wrap = document.createElement("div"); wrap.className = "field wide";
+      wrap.innerHTML = `<label>Background</label><div class="backgrounds"></div><div class="help">The animated ground behind the cards. Each tile runs the real shader in your current colors.</div>`;
+      const box = wrap.querySelector(".backgrounds");
+      const designs = window.HyteAmbient ? HyteAmbient.DESIGNS : [{ id: "liquid", name: "Liquid metal", blurb: "" }];
+      const [primary, secondary] = previewColors();
+      designs.forEach((d) => {
+        const btn = document.createElement("button"); btn.type = "button"; btn.className = "bg"; btn.dataset.id = d.id; btn.title = d.blurb;
+        btn.innerHTML = `<span class="bg-tile"><canvas></canvas></span><span class="bg-name">${d.name}</span>`;
+        btn.addEventListener("click", () => { set("theme.background", d.id); dirty(); refreshBackgrounds(); });
+        box.appendChild(btn);
+        if (window.HyteAmbient) {
+          const pv = HyteAmbient.preview(btn.querySelector("canvas"), { design: d.id, primary, secondary });
+          if (pv) bgPreviews.push(pv);
+        }
+      });
+      refreshBackgrounds();
+      return wrap;
+    }
+    function refreshBackgrounds() {
+      document.querySelectorAll(".bg").forEach((b) => b.classList.toggle("on", b.dataset.id === cfg.theme.background));
+      const [primary, secondary] = previewColors();
+      bgPreviews.forEach((p) => p.setPalette(primary, secondary));
+    }
+
+    // ---- automata color wheel ------------------------------------------------------------
+    // Hue around the ring, saturation toward the center, lightness on a slider per color.
+    // The wheel background is HSL at 50% lightness; handles show the real color.
+    const CA_COLORS = [
+      { key: "primary", name: "Survivors", desc: "cells that have lived a while" },
+      { key: "secondary", name: "Newborn", desc: "cells that just appeared" },
+      { key: "blend", name: "Trails", desc: "dying cells and what they leave behind" },
+    ];
+    const CA_DEFAULTS = { primary: "#ffe28a", secondary: "#7dffc5", blend: "#f4f7ff" };
+    function hexToHsl(hex) {
+      const [r, g, b] = hexToRgb(hex).map((v) => v / 255);
+      const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min;
+      if (!d) return [0, 0, l];
+      const s = d / (1 - Math.abs(2 * l - 1));
+      let h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+      return [h * 60, s, l];
+    }
+    function hslToHex(h, s, l) {
+      const f = (n) => { const k = (n + h / 30) % 12, a = s * Math.min(l, 1 - l); return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)); };
+      return rgbToHex([f(0), f(8), f(4)].map((v) => Math.round(v * 255)));
+    }
+    let caPreview = null;
+    function colorWheel() {
+      const wrap = document.createElement("div"); wrap.className = "field wide";
+      wrap.innerHTML = `<label>Colors</label><div class="wheel-box"><div class="wheel">${CA_COLORS.map((_, i) => `<div class="handle" data-i="${i}">${i + 1}</div>`).join("")}</div>
+        <div class="wheel-side">${CA_COLORS.map((c, i) => `<div class="swatch-row" data-i="${i}"><i class="dot"></i><span class="who">${i + 1} · ${c.name}<small>${c.desc}</small></span><input type="range" min="10" max="98" title="Lightness"><code></code></div>`).join("")}
+        <div class="ca-preview"></div><div class="row"><button class="btn" type="button" data-reset>Reset colors</button><span class="help">Drag a numbered handle, or pick a row and tap the wheel. The slider sets how light the color is.</span></div></div></div>`;
+      const wheel = wrap.querySelector(".wheel"), handles = [...wrap.querySelectorAll(".handle")], rows = [...wrap.querySelectorAll(".swatch-row")];
+      const hsl = CA_COLORS.map((c) => hexToHsl(cfg.automata[c.key]));
+      let active = 0;
+      const hex = (i) => hslToHex(hsl[i][0], hsl[i][1], hsl[i][2]);
+      const theme = () => Object.fromEntries(CA_COLORS.map((c, i) => [c.key, hex(i)]));
+      function draw() {
+        const R = wheel.clientWidth / 2 || 110;
+        hsl.forEach(([h, s, l], i) => {
+          const a = (h * Math.PI) / 180, col = hex(i);
+          handles[i].style.left = `${R + R * s * 0.94 * Math.sin(a)}px`; handles[i].style.top = `${R - R * s * 0.94 * Math.cos(a)}px`;
+          handles[i].style.background = col; handles[i].classList.toggle("on", i === active);
+          rows[i].querySelector(".dot").style.background = col; rows[i].querySelector("code").textContent = col;
+          rows[i].querySelector("input").value = Math.round(l * 100); rows[i].classList.toggle("on", i === active);
+        });
+        if (caPreview) caPreview.setTheme(theme());
+      }
+      function commit() { CA_COLORS.forEach((c, i) => set(`automata.${c.key}`, hex(i))); dirty(); draw(); }
+      function pick(ev) {
+        const r = wheel.getBoundingClientRect(), R = r.width / 2, dx = ev.clientX - r.left - R, dy = ev.clientY - r.top - R;
+        hsl[active][0] = ((Math.atan2(dx, -dy) * 180) / Math.PI + 360) % 360;
+        hsl[active][1] = Math.min(1, Math.hypot(dx, dy) / (R * 0.94));
+        commit();
+      }
+      wheel.addEventListener("pointerdown", (ev) => {
+        const h = ev.target.closest(".handle"); if (h) active = +h.dataset.i;
+        wheel.setPointerCapture(ev.pointerId); wheel.dataset.drag = "1"; pick(ev);
+      });
+      wheel.addEventListener("pointermove", (ev) => { if (wheel.dataset.drag) pick(ev); });
+      const drop = () => delete wheel.dataset.drag;
+      wheel.addEventListener("pointerup", drop); wheel.addEventListener("pointercancel", drop);
+      rows.forEach((row, i) => {
+        row.addEventListener("click", () => { active = i; draw(); });
+        row.querySelector("input").addEventListener("input", (ev) => { active = i; hsl[i][2] = +ev.target.value / 100; commit(); });
+      });
+      wrap.querySelector("[data-reset]").addEventListener("click", () => { CA_COLORS.forEach((c, i) => { hsl[i] = hexToHsl(CA_DEFAULTS[c.key]); }); commit(); });
+      // Live preview: the real module, shrunk.
+      if (window.CA) {
+        if (caPreview) caPreview.destroy();
+        try { caPreview = CA.mount(wrap.querySelector(".ca-preview"), { header: false, attract: false, reactive: false, rule: cfg.automata.rule, cell: 3, theme: theme() }); }
+        catch (e) { console.warn("automata preview failed", e); caPreview = null; }
+      }
+      draw();
+      return wrap;
+    }
+    // The preview follows the starting-rule select.
+    document.addEventListener("change", (ev) => { if (ev.target.id === "f-automata-rule" && caPreview) caPreview.setRule(ev.target.value); });
 
     function appsEditor() {
       const wrap = document.createElement("div"); wrap.className = "field wide";
@@ -309,6 +458,7 @@
     async function load() {
       const data = await (await fetch("/api/settings")).json();
       cfg = data.config; widgetIds = data.widgets;
+      try { liveTheme = await (await fetch("/api/theme")).json(); } catch (e) { liveTheme = null; }
       $("path").textContent = data.path; $("path2").textContent = data.path;
       render(); setStatus("", "");
     }

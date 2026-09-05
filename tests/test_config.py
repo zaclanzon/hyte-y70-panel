@@ -65,6 +65,25 @@ def test_automata_defaults_and_clamp():
     assert cfg.automata.rule == "brain"
 
 
+def test_automata_colors_default_and_reject_bad_values():
+    cfg = parse_config({})
+    assert (cfg.automata.primary, cfg.automata.secondary, cfg.automata.blend) == ("#ffe28a", "#7dffc5", "#f4f7ff")
+    cfg = parse_config({"automata": {"primary": "#00FF00", "secondary": "red", "blend": [1, 2, 3]}})
+    assert cfg.automata.primary == "#00FF00"
+    assert cfg.automata.secondary == "#7dffc5"
+    assert cfg.automata.blend == "#f4f7ff"
+
+
+def test_background_defaults_and_validation():
+    from hyte_panel.config import BACKGROUNDS
+
+    assert parse_config({}).theme.background == "liquid"
+    for name in BACKGROUNDS:
+        assert parse_config({"theme": {"background": name}}).theme.background == name
+    assert parse_config({"theme": {"background": "plaid"}}).theme.background == "liquid"
+    assert parse_config({"theme": {"background": 3}}).theme.background == "liquid"
+
+
 def test_layout_defaults_and_validation():
     import tomllib
 

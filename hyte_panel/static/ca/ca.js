@@ -12,6 +12,9 @@
 
   const SPEEDS = [1, 2, 5, 10, 15, 20, 30, 60, 120, 240];
   const MAX_STEPS_PER_FRAME = 120;
+  // Canvas presents per second. Steps run at the rule's generations/s; the
+  // picture only needs to refresh this often, and each present repaints the card.
+  const RENDER_FPS = 10;
 
   // ---- Colors ---------------------------------------------------------------------
   const probeCtx = (() => { try { return document.createElement("canvas").getContext("2d", { willReadFrequently: true }); } catch (e) { return null; } })();
@@ -594,7 +597,7 @@
         if (n > 0) { st.acc -= n; engine.step(n); st.gen += n; st.dirty = true; }
       }
       if (now - st.lastMeasure > 1000) { measure(now); attractTick(now); if (st.themeCss) setTheme(null); }
-      if (st.dirty) { engine.render(theme); st.dirty = false; }
+      if (st.dirty && now - (st.lastRender || 0) >= 1000 / RENDER_FPS) { engine.render(theme); st.dirty = false; st.lastRender = now; }
     }
 
     // ---- resize handling

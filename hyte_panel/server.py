@@ -67,6 +67,7 @@ class PanelState:
                 "dim_after_seconds": self.cfg.display.dim_after_seconds,
             },
             "layout": {"widgets": list(self.cfg.layout.widgets), "all": list(WIDGET_IDS)},
+            "background": self.cfg.theme.background,
             "weather": {"enabled": self.cfg.weather.enabled and self.cfg.shows("weather"), "label": self.cfg.weather.label, "units": self.cfg.weather.units},
             "agents": {"enabled": self.cfg.agents.enabled and self.cfg.shows("agents")},
             "automata": {
@@ -76,6 +77,11 @@ class PanelState:
                 "attract_idle_seconds": self.cfg.automata.attract_idle_seconds,
                 "attract_rotate_seconds": self.cfg.automata.attract_rotate_seconds,
                 "reactive": self.cfg.automata.reactive,
+                "colors": {
+                    "primary": self.cfg.automata.primary,
+                    "secondary": self.cfg.automata.secondary,
+                    "blend": self.cfg.automata.blend,
+                },
             },
             "apps": [a.to_public(i) for i, a in enumerate(self.cfg.apps)],
         }

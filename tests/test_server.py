@@ -23,6 +23,10 @@ def test_config_endpoint_hides_commands(client):
     assert "command" not in str(data)
 
 
+def test_config_endpoint_names_the_background(client):
+    assert client.get("/api/config").json()["background"] == "liquid"
+
+
 def test_snapshot_has_all_sections(client):
     snap = client.get("/api/snapshot").json()
     for key in ("cpu", "memory", "disks", "network", "gpus", "agents", "weather", "theme", "uptime_seconds"):

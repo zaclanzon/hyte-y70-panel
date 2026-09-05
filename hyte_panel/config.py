@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import tomllib
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -13,6 +14,9 @@ from typing import Any
 # which ones appear and how they are ordered.
 WIDGET_IDS = ["clock", "weather", "cpu", "gpu", "memory", "network", "agents", "automata", "apps"]
 DEFAULT_WIDGETS = ["clock", "weather", "cpu", "gpu", "memory", "network", "agents", "automata"]
+# Ambient backgrounds behind the glass, in the order the settings page lists
+# them. The shaders live in static/ambient.js (DESIGNS).
+BACKGROUNDS = ["liquid", "ribbons", "bokeh", "caustics", "ink", "satin", "coral", "lava", "shafts", "contours", "hex"]
 
 
 def default_config_path() -> Path:
@@ -78,6 +82,8 @@ class ThemeConfig:
     preset: str = ""
     primary: list[int] = field(default_factory=lambda: [255, 0, 0])
     secondary: list[int] = field(default_factory=lambda: [0, 0, 255])
+    # The animated ground behind the cards; one of BACKGROUNDS.
+    background: str = "liquid"
 
 
 def _theme_compat(raw: dict[str, Any] | None) -> dict[str, Any]:
@@ -101,6 +107,10 @@ class AutomataConfig:
     attract_idle_seconds: int = 45     # idle time before the card starts rotating rules; 0 = never
     attract_rotate_seconds: int = 120  # how long each rule runs in attract mode
     reactive: bool = True       # CPU, network and agent activity feed the world
+    # Cell colors as #rrggbb. Set from the wheel on the settings page.
+    primary: str = "#ffe28a"    # long-lived cells
+    secondary: str = "#7dffc5"  # newborn cells
+    blend: str = "#f4f7ff"      # dying cells and trails
 
 
 @dataclass
@@ -149,6 +159,10 @@ def _fill(cls, data: dict[str, Any] | None):
     return cls(**{k: v for k, v in data.items() if k in known})
 
 
+def _is_hex_color(v: Any) -> bool:
+    return isinstance(v, str) and re.fullmatch(r"#[0-9a-fA-F]{6}", v) is not None
+
+
 def parse_config(raw: dict[str, Any], source: str = "dict") -> Config:
     apps: list[AppButton] = []
     for entry in raw.get("apps", []) or []:
@@ -171,8 +185,13 @@ def parse_config(raw: dict[str, Any], source: str = "dict") -> Config:
     if cfg.weather.units not in ("metric", "imperial"):
         cfg.weather.units = "metric"
     cfg.automata.cell = max(1, min(8, int(cfg.automata.cell)))
+    for key in ("primary", "secondary", "blend"):
+        if not _is_hex_color(getattr(cfg.automata, key)):
+            setattr(cfg.automata, key, getattr(AutomataConfig, key))
     if cfg.theme.source not in ("auto", "file", "openrgb", "static"):
         cfg.theme.source = "auto"
+    if cfg.theme.background not in BACKGROUNDS:
+        cfg.theme.background = "liquid"
     if not (isinstance(cfg.theme.file_keys, list) and len(cfg.theme.file_keys) == 2):
         cfg.theme.file_keys = ["primary", "secondary"]
     seen: list[str] = []

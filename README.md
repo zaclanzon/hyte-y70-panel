@@ -73,12 +73,16 @@ buttons, and where the colors come from. Changes apply immediately.
 **Colors.** Two accent colors drive the whole page. By default they come from
 your case lighting through an [OpenRGB](https://openrgb.org) server, or from a
 JSON file your lighting tool writes. Without either, pick a preset or two
-colors in Settings.
+colors in Settings. The animated ground behind the cards is chosen there too,
+from eleven live previews: liquid metal, aero ribbons, bokeh, pool caustics,
+ink marble, satin, reaction-diffusion coral, lava lamp, light shafts, contour
+lines and a hex lattice.
 
 **Automata.** The card runs Life-like rules, Brian's Brain, Wolfram's
 elementary rules and cyclic automata on the GPU. Drag to paint, hold to stamp
 a pattern, tap the rule name to pick another. Left alone it rotates rules, and
-CPU load, network traffic and agent activity feed the world. Details in
+CPU load, network traffic and agent activity feed the world. The cells have
+their own three colors, set on a wheel in Settings. Details in
 [automata/README.md](automata/README.md).
 
 **AI agents.** The card lists running agent CLIs (Claude Code, Codex, Aider,
