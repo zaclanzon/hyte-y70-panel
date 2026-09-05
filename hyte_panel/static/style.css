@@ -46,6 +46,7 @@ body {
   background: transparent;
 }
 canvas { display: block; }
+[hidden] { display: none !important; }
 
 /* The opaque liquid surface is shaded on a small GPU canvas in ambient.js. */
 .ambient-glow { position: fixed; inset: 0; z-index: -1; pointer-events: none; }

@@ -43,7 +43,9 @@
 .ca-toast small { display: block; color: var(--ca-muted); font-size: 18px; margin-top: 6px; letter-spacing: 1px; }
 @keyframes ca-toast-in { from { opacity: 0; transform: translate(-50%, -50%) scale(.9); } to { opacity: 1; } }
 
-/* Long-press stamp menu */
+/* Long-press stamp menu. Author display rules would beat the browser's own
+   [hidden] { display: none }, so the attribute is pinned here. */
+.ca [hidden] { display: none !important; }
 .ca-menu {
   position: absolute; display: flex; flex-direction: column; gap: 4px; padding: 6px; z-index: 3;
   border-radius: 18px; background: rgba(10, 8, 22, 0.8); border: 1px solid var(--ca-edge-hi);
