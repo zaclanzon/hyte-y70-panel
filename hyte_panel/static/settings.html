@@ -184,10 +184,12 @@
       apps: { name: "App buttons", desc: "Large touch buttons that start programs.", fields: [{ type: "apps", wide: true }] },
     };
     const LOOK = [
-      { path: "theme.source", label: "Colors come from", type: "select", options: [["auto", "Auto: lighting if available, else the colors below"], ["openrgb", "OpenRGB server"], ["file", "A JSON file my lighting tool writes"], ["static", "The colors below"]], wide: true },
-      { type: "presets", wide: true },
-      { path: "theme.primary", label: "Primary", type: "color" },
-      { path: "theme.secondary", label: "Secondary", type: "color" },
+      { path: "theme.source", label: "Colors come from", type: "select", options: [["auto", "Auto: lighting if available, else custom colors"], ["openrgb", "OpenRGB server"], ["file", "A JSON file my lighting tool writes"], ["static", "Custom colors"]], wide: true },
+      // Presets and pickers only matter when they can drive the panel: the custom
+      // source, or auto as the fallback when no lighting is found.
+      { type: "presets", wide: true, show: (c) => ["auto", "static"].includes(c.theme.source) },
+      { path: "theme.primary", label: "Primary", type: "color", show: (c) => ["auto", "static"].includes(c.theme.source) },
+      { path: "theme.secondary", label: "Secondary", type: "color", show: (c) => ["auto", "static"].includes(c.theme.source) },
       { path: "theme.openrgb_host", label: "OpenRGB host", type: "text", show: (c) => ["auto", "openrgb"].includes(c.theme.source) },
       { path: "theme.openrgb_port", label: "OpenRGB port", type: "number", show: (c) => ["auto", "openrgb"].includes(c.theme.source) },
       { path: "theme.file", label: "JSON file", type: "text", help: "Path to a file your lighting tool keeps updated.", show: (c) => ["auto", "file"].includes(c.theme.source) },
@@ -209,14 +211,15 @@
     function setStatus(text, cls) { const s = $("status"); s.textContent = text; s.className = `status ${cls}`; }
 
     // ---- field rendering -----------------------------------------------------------------------
+    // Fields with a show(cfg) rule are toggled by rerenderVisibility().
+    const showable = (el, f) => { if (f.show) { el.dataset.show = "1"; el._show = f.show; } return el; };
     function field(f) {
       if (f.type === "apps") return appsEditor();
-      if (f.type === "presets") return presets();
+      if (f.type === "presets") return showable(presets(), f);
       if (f.type === "cawheel") return colorWheel();
       if (f.type === "background") return backgroundPicker();
       const wrap = document.createElement("div");
       wrap.className = `field${f.wide ? " wide" : ""}`;
-      if (f.show) wrap.dataset.show = "1";
       const id = `f-${f.path.replace(/\./g, "-")}`;
       let input;
       const v = get(f.path);
@@ -266,8 +269,7 @@
         input.addEventListener("input", () => { set(f.path, f.type === "number" ? (input.value === "" ? 0 : +input.value) : input.value); dirty(); });
       }
       if (f.help) wrap.insertAdjacentHTML("beforeend", `<div class="help">${f.help}</div>`);
-      wrap._show = f.show;
-      return wrap;
+      return showable(wrap, f);
     }
     function rerenderVisibility() { document.querySelectorAll(".field[data-show]").forEach((el) => el.classList.toggle("hidden", !el._show(cfg))); }
     function fields(list) { const g = document.createElement("div"); g.className = "grid"; list.forEach((f) => g.appendChild(field(f))); return g; }
@@ -297,12 +299,28 @@
     }
 
     // ---- background picker ---------------------------------------------------------------
-    // Live tiles from ambient.js in the colors the panel is showing right now:
-    // the lighting's colors unless the source is static, then the picked ones.
+    // Live tiles from ambient.js in the colors the panel will show after Save: the
+    // lighting's colors when a lighting source is picked *and* actually delivering
+    // (liveTheme.source says which one won), otherwise the picked colors. The picked
+    // pair gets the same luminance lift the panel applies (collectors/theme.py).
     let bgPreviews = [];
+    const MIN_LUMINANCE = 0.30;
+    function screenTone(rgb) {
+      const [r, g, b] = rgb.map((v) => v / 255), lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      if (lum >= MIN_LUMINANCE) return rgb;
+      const t = (MIN_LUMINANCE - lum) / (1 - lum);
+      return rgb.map((v) => Math.round(v + (255 - v) * t));
+    }
     function previewColors() {
-      if (cfg.theme.source !== "static" && liveTheme) return [liveTheme.primary, liveTheme.secondary];
-      return [rgbToHex(cfg.theme.primary), rgbToHex(cfg.theme.secondary)];
+      if (cfg.theme.source !== "static" && liveTheme && liveTheme.source !== "static") return [liveTheme.primary, liveTheme.secondary];
+      return [cfg.theme.primary, cfg.theme.secondary].map((c) => rgbToHex(screenTone(c)));
+    }
+    async function refreshLiveTheme() {
+      let t = null;
+      try { t = await (await fetch("/api/theme")).json(); } catch (e) { /* keep the last one */ }
+      const changed = !!t && (!liveTheme || t.primary !== liveTheme.primary || t.secondary !== liveTheme.secondary || t.source !== liveTheme.source);
+      if (t) liveTheme = t;
+      if (changed && cfg) refreshBackgrounds();
     }
     function backgroundPicker() {
       bgPreviews.forEach((p) => p.destroy()); bgPreviews = [];
@@ -328,6 +346,10 @@
       document.querySelectorAll(".bg").forEach((b) => b.classList.toggle("on", b.dataset.id === cfg.theme.background));
       const [primary, secondary] = previewColors();
       bgPreviews.forEach((p) => p.setPalette(primary, secondary));
+      // This page follows the same two accents as the panel.
+      const root = document.documentElement.style;
+      root.setProperty("--accent", primary); root.setProperty("--accent-2", secondary);
+      root.setProperty("--accent-3", rgbToHex(hexToRgb(primary).map((v, i) => Math.round((v * 3 + hexToRgb(secondary)[i]) / 4))));
     }
 
     // ---- automata color wheel ------------------------------------------------------------
@@ -458,16 +480,18 @@
     async function load() {
       const data = await (await fetch("/api/settings")).json();
       cfg = data.config; widgetIds = data.widgets;
-      try { liveTheme = await (await fetch("/api/theme")).json(); } catch (e) { liveTheme = null; }
+      await refreshLiveTheme();
       $("path").textContent = data.path; $("path2").textContent = data.path;
       render(); setStatus("", "");
     }
+    // Lighting-driven colors move on their own; keep the tiles honest.
+    setInterval(refreshLiveTheme, 5000);
     async function save() {
       setStatus("Saving…", "");
       try {
         const r = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(cfg) });
         if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
-        cfg = (await r.json()).config; render(); setStatus("Saved. The panel updated.", "ok");
+        cfg = (await r.json()).config; await refreshLiveTheme(); render(); setStatus("Saved. The panel updated.", "ok");
       } catch (e) { setStatus(`Not saved: ${e.message}`, "err"); }
     }
     $("save").addEventListener("click", save);
