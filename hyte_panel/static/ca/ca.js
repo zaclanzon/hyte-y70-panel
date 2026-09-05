@@ -494,15 +494,27 @@
     canvas.addEventListener("pointercancel", up);
 
     // ---- stamp menu
+    // Opened by a hold. It closes on a choice, on a tap anywhere else on the
+    // page, or by itself after MENU_MS: a hold left by a resting hand must not
+    // leave the list on screen (attract mode only clears it while playing).
+    const MENU_MS = 8000;
+    let menuTimer = null;
     function showMenu(cx, cy, g) {
       menu.innerHTML = Core.STAMPS.map((s, i) => `<button data-i="${i}">${s.name}</button>`).join("");
       menu.hidden = false;
+      clearTimeout(menuTimer);
+      menuTimer = setTimeout(hideMenu, MENU_MS);
       const r = stage.getBoundingClientRect(), mw = menu.offsetWidth, mh = menu.offsetHeight;
       menu.style.left = `${Math.min(Math.max(8, cx - r.left - mw / 2), r.width - mw - 8)}px`;
       menu.style.top = `${Math.min(Math.max(8, cy - r.top - mh - 24), r.height - mh - 8)}px`;
       menu.onclick = (ev) => { const b = ev.target.closest("button"); if (!b) return; stamp(Core.STAMPS[+b.dataset.i], g[0], g[1]); hideMenu(); touched(); };
     }
-    function hideMenu() { menu.hidden = true; }
+    function hideMenu() { menu.hidden = true; clearTimeout(menuTimer); }
+    const outsideTap = (ev) => {
+      if (!menu.hidden && !menu.contains(ev.target)) hideMenu();
+      if (!picker.hidden && !picker.contains(ev.target) && !rulePill.contains(ev.target)) hidePicker();
+    };
+    document.addEventListener("pointerdown", outsideTap, true);
 
     // ---- rule picker
     function showPicker() {
@@ -622,7 +634,7 @@
       setTheme, setRule, randomRule, setSpeed, play, pause, toggle: () => (st.playing ? pause() : play()),
       step: stepOnce, seed, clear, stamp, inject, onSnapshot, read: () => engine.read(),
       setPaused(hidden) { if (hidden) { st.wasPlaying = st.playing; pause(); } else if (st.wasPlaying) play(); },
-      destroy() { st.destroyed = true; ro.disconnect(); engine.destroy(); el.innerHTML = ""; el.classList.remove("ca"); },
+      destroy() { st.destroyed = true; ro.disconnect(); document.removeEventListener("pointerdown", outsideTap, true); hideMenu(); engine.destroy(); el.innerHTML = ""; el.classList.remove("ca"); },
     };
   }
 
